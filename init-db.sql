@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at         timestamptz  NOT NULL DEFAULT now()
 );
 
--- 4) Profile localizations (TH/EN/CH localized fields)
+-- 4) Profile localizations (TH/EN/ZH localized fields)
 CREATE TABLE IF NOT EXISTS profile_localizations (
   id            uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       uuid         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -98,7 +98,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
 CREATE TRIGGER trg_users_updated_at
-BEFORE UPDATE ON users~
+BEFORE UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 DROP TRIGGER IF EXISTS trg_profiles_updated_at ON profiles;

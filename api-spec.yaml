@@ -88,6 +88,34 @@ components:
             zh: { full_name: "-", position: "-", department: "-", bot_location: "-" }
       required: [user, profile, enabled_langs, localizations]
 
+    PublicProfileNonLocalized:
+      type: object
+      properties:
+        public_id: { type: string, format: uuid }
+        photo_url: { type: string, nullable: true, example: "https://cdn.example.com/photos/abc.jpg" }
+        email_public: { type: string, format: email }
+        phone_number: { type: string, example: "-" }
+      required: [public_id, email_public, phone_number]
+
+    PublicProfileResponse:
+      type: object
+      properties:
+        profile:
+          $ref: "#/components/schemas/PublicProfileNonLocalized"
+        enabled_langs:
+          type: array
+          items: { type: string, enum: [th, en, zh] }
+          example: [en, th]
+        localizations:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ProfileLocalization"
+          example:
+            en: { full_name: "John Doe", position: "Engineer", department: "IT", bot_location: "HQ" }
+            th: { full_name: "-", position: "-", department: "-", bot_location: "-" }
+            zh: { full_name: "-", position: "-", department: "-", bot_location: "-" }
+      required: [profile, enabled_langs, localizations]
+
     RegisterRequest:
       type: object
       properties:
@@ -167,7 +195,7 @@ paths:
             example: { email: "user@company.com", password: "P@ssw0rd" }
       responses:
         "200":
-          description: OK (Set-Cookie: session=...)
+          description: "OK (Set-Cookie: session=...)"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ProfileResponse" }
@@ -310,7 +338,7 @@ paths:
   /public/profiles/{public_id}:
     get:
       tags: [Public]
-      summary: Get public profile by public_id (no auth)
+      summary: Get public profile by public_id (no auth, read-only fields only)
       parameters:
         - name: public_id
           in: path
@@ -328,7 +356,7 @@ paths:
           description: OK
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/ProfileResponse" }
+              schema: { $ref: "#/components/schemas/PublicProfileResponse" }
         "404":
           description: Not found
           content:

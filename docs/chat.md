@@ -1,7 +1,3 @@
-
-
-
-
 You said:
 Overview: Hosting site for employees’ information as a name card, then generating QR code or other method to easily access
 
@@ -1321,6 +1317,7 @@ CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 CREATE INDEX IF NOT EXISTS idx_profile_localizations_user_id ON profile_localizations(user_id);
 
 -- OPTIONAL (recommended): keep updated_at fresh automatically
+``` 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS trigger AS $$
 BEGIN
@@ -1348,6 +1345,7 @@ DROP TRIGGER IF EXISTS trg_system_settings_updated_at ON system_settings;
 CREATE TRIGGER trg_system_settings_updated_at
 BEFORE UPDATE ON system_settings
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+```
 
 You said:
 I think the initial sql script is quite clear, update checklist
@@ -1755,7 +1753,7 @@ return all localizations + enabled_langs
 
 OpenAPI (Paths + request/response examples)
 Below is a Phase 1 OpenAPI 3.0 YAML with cookie-session auth.
-
+```
 openapi: 3.0.3
 info:
   title: Employee Name Card API
@@ -2173,6 +2171,7 @@ paths:
           description: JPEG file
           content:
             image/jpeg: {}
+```
 How to “start” practically (no code yet)
 Copy the YAML into a file: openapi.yaml
 
@@ -2291,8 +2290,8 @@ Suggest a clean internal service structure so private & public exports reuse the
 
 You said:
 yes update to the original yaml as i didn't start implementation yet.
-
 ChatGPT said:
+```
 openapi: 3.0.3
 info:
   title: Employee Name Card API
@@ -2765,7 +2764,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
-
+```
 You said:
 update the checklist
 
@@ -3602,4 +3601,5 @@ or
 generate a small Express/Fastify skeleton that matches this spec
 
 Just tell me which one you want next.
+
 
