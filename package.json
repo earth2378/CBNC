@@ -1,0 +1,18 @@
+{
+  "name": "cbnc",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace apps/api run dev",
+    "build:api": "npm --workspace apps/api run build",
+    "start:api": "npm --workspace apps/api run start",
+    "typecheck": "npm --workspace apps/api run typecheck",
+    "db:generate": "npm --workspace apps/api run db:generate",
+    "db:push": "npm --workspace apps/api run db:push",
+    "db:studio": "npm --workspace apps/api run db:studio"
+  }
+}
