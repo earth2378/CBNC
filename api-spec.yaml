@@ -1,0 +1,472 @@
+openapi: 3.0.3
+info:
+  title: Employee Name Card API
+  version: "0.1.0"
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Auth
+  - name: Me
+  - name: Public
+  - name: Admin
+  - name: Export
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: VALIDATION_ERROR }
+            message: { type: string, example: "email is invalid" }
+          required: [code, message]
+      required: [error]
+
+    UserSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { type: string, enum: [employee, admin] }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+      required: [id, email, role, is_active, created_at]
+
+    ProfileNonLocalized:
+      type: object
+      properties:
+        public_id: { type: string, format: uuid }
+        photo_url: { type: string, nullable: true, example: "https://cdn.example.com/photos/abc.jpg" }
+        email_public: { type: string, format: email }
+        phone_number: { type: string, example: "-" }
+        pref_enable_th: { type: boolean }
+        pref_enable_en: { type: boolean }
+        pref_enable_zh: { type: boolean }
+      required: [public_id, email_public, phone_number, pref_enable_th, pref_enable_en, pref_enable_zh]
+
+    ProfileLocalization:
+      type: object
+      properties:
+        full_name: { type: string, example: "-" }
+        position: { type: string, example: "-" }
+        department: { type: string, example: "-" }
+        bot_location: { type: string, example: "-" }
+      required: [full_name, position, department, bot_location]
+
+    ProfileResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            email: { type: string, format: email }
+            role: { type: string, enum: [employee, admin] }
+            is_active: { type: boolean }
+          required: [id, email, role, is_active]
+        profile:
+          $ref: "#/components/schemas/ProfileNonLocalized"
+        enabled_langs:
+          type: array
+          items: { type: string, enum: [th, en, zh] }
+          example: [en, th]
+        localizations:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ProfileLocalization"
+          example:
+            en: { full_name: "John Doe", position: "Engineer", department: "IT", bot_location: "HQ" }
+            th: { full_name: "-", position: "-", department: "-", bot_location: "-" }
+            zh: { full_name: "-", position: "-", department: "-", bot_location: "-" }
+      required: [user, profile, enabled_langs, localizations]
+
+    RegisterRequest:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, example: "P@ssw0rd" }
+      required: [email, password]
+
+    LoginRequest:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+      required: [email, password]
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        new_password: { type: string }
+        re_new_password: { type: string }
+      required: [email, new_password, re_new_password]
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        email_public: { type: string, format: email }
+        phone_number: { type: string, example: "-" }
+        pref_enable_th: { type: boolean }
+        pref_enable_en: { type: boolean }
+        pref_enable_zh: { type: boolean }
+        localizations:
+          type: object
+          properties:
+            th: { $ref: "#/components/schemas/ProfileLocalization" }
+            en: { $ref: "#/components/schemas/ProfileLocalization" }
+            zh: { $ref: "#/components/schemas/ProfileLocalization" }
+      required: [email_public, phone_number, pref_enable_th, pref_enable_en, pref_enable_zh, localizations]
+
+    AdminUpdateUserRequest:
+      type: object
+      properties:
+        is_active: { type: boolean }
+      required: [is_active]
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register employee account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+            example: { email: "user@company.com", password: "P@ssw0rd" }
+      responses:
+        "201":
+          description: Created (may also set session cookie if you choose auto-login)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login (sets session cookie)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+            example: { email: "user@company.com", password: "P@ssw0rd" }
+      responses:
+        "200":
+          description: OK (Set-Cookie: session=...)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+        "401":
+          description: Invalid credentials or deactivated account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (clears session cookie)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "204":
+          description: No Content
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password (prototype-simple)
+      description: |
+        Prototype-only flow: accepts email + new password + re-enter.
+        (Security limitations accepted for demo.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResetPasswordRequest" }
+            example:
+              email: "user@company.com"
+              new_password: "NewP@ss1"
+              re_new_password: "NewP@ss1"
+      responses:
+        "200":
+          description: Password reset success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+              example: { ok: true }
+        "400":
+          description: Validation error (password mismatch, etc.)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /me/profile:
+    get:
+      tags: [Me]
+      summary: Get my profile
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - name: langs
+          in: query
+          required: false
+          description: Optional filter, e.g. langs=en,th
+          schema:
+            type: string
+            example: "en,th"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+    put:
+      tags: [Me]
+      summary: Update my profile (non-localized + localized)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateProfileRequest" }
+            example:
+              email_public: "user@company.com"
+              phone_number: "-"
+              pref_enable_th: true
+              pref_enable_en: true
+              pref_enable_zh: false
+              localizations:
+                en: { full_name: "John Doe", position: "Engineer", department: "IT", bot_location: "HQ" }
+                th: { full_name: "-", position: "-", department: "-", bot_location: "-" }
+                zh: { full_name: "-", position: "-", department: "-", bot_location: "-" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /me/photo:
+    post:
+      tags: [Me]
+      summary: Upload my profile photo
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        "200":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photo_url: { type: string }
+              example:
+                photo_url: "https://cdn.example.com/photos/abc.jpg"
+
+  /public/profiles/{public_id}:
+    get:
+      tags: [Public]
+      summary: Get public profile by public_id (no auth)
+      parameters:
+        - name: public_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: lang
+          in: query
+          required: false
+          description: If provided, server may return a single localization.
+          schema:
+            type: string
+            enum: [th, en, zh]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileResponse" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: List users (admin only)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserSummary" }
+              example:
+                items:
+                  - { id: "3fa85f64-5717-4562-b3fc-2c963f66afa6", email: "u1@company.com", role: "employee", is_active: true, created_at: "2026-02-18T00:00:00Z" }
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /admin/users/{user_id}:
+    patch:
+      tags: [Admin]
+      summary: Activate/deactivate user (admin only)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminUpdateUserRequest" }
+            example: { is_active: false }
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserSummary" }
+
+  /me/qr.png:
+    get:
+      tags: [Export]
+      summary: Download my QR code as PNG (auth required)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: PNG image
+          content:
+            image/png: {}
+
+  /me/card.pdf:
+    get:
+      tags: [Export]
+      summary: Download my card as PDF (auth required)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: PDF file
+          content:
+            application/pdf: {}
+
+  /me/card.jpg:
+    get:
+      tags: [Export]
+      summary: Download my card as JPEG (auth required)
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: JPEG file
+          content:
+            image/jpeg: {}
+
+  # NEW: Public export endpoints (no auth) to support download from public profile page
+  /public/profiles/{public_id}/card.pdf:
+    get:
+      tags: [Public, Export]
+      summary: Download public card as PDF (no auth)
+      parameters:
+        - name: public_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: lang
+          in: query
+          required: false
+          description: Optional language for the exported card.
+          schema:
+            type: string
+            enum: [th, en, zh]
+      responses:
+        "200":
+          description: PDF file
+          content:
+            application/pdf: {}
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /public/profiles/{public_id}/card.jpg:
+    get:
+      tags: [Public, Export]
+      summary: Download public card as JPEG (no auth)
+      parameters:
+        - name: public_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: lang
+          in: query
+          required: false
+          description: Optional language for the exported card.
+          schema:
+            type: string
+            enum: [th, en, zh]
+      responses:
+        "200":
+          description: JPEG file
+          content:
+            image/jpeg: {}
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
