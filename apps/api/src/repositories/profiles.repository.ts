@@ -27,3 +27,64 @@ export async function findProfileLocalizationByUserIdAndLang(db: Db, userId: str
     .limit(1);
   return row ?? null;
 }
+
+export async function updateProfileNonLocalized(
+  db: Db,
+  input: {
+    userId: string;
+    emailPublic: string;
+    phoneNumber: string;
+    prefEnableTh: boolean;
+    prefEnableEn: boolean;
+    prefEnableZh: boolean;
+  }
+) {
+  const updated = await db
+    .update(schema.profiles)
+    .set({
+      emailPublic: input.emailPublic,
+      phoneNumber: input.phoneNumber,
+      prefEnableTh: input.prefEnableTh,
+      prefEnableEn: input.prefEnableEn,
+      prefEnableZh: input.prefEnableZh
+    })
+    .where(eq(schema.profiles.userId, input.userId))
+    .returning();
+
+  return updated[0] ?? null;
+}
+
+export async function upsertProfileLocalization(
+  db: Db,
+  input: {
+    userId: string;
+    lang: "th" | "en" | "zh";
+    fullName: string;
+    position: string;
+    department: string;
+    botLocation: string;
+  }
+) {
+  const updated = await db
+    .insert(schema.profileLocalizations)
+    .values({
+      userId: input.userId,
+      lang: input.lang,
+      fullName: input.fullName,
+      position: input.position,
+      department: input.department,
+      botLocation: input.botLocation
+    })
+    .onConflictDoUpdate({
+      target: [schema.profileLocalizations.userId, schema.profileLocalizations.lang],
+      set: {
+        fullName: input.fullName,
+        position: input.position,
+        department: input.department,
+        botLocation: input.botLocation
+      }
+    })
+    .returning();
+
+  return updated[0] ?? null;
+}

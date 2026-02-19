@@ -10,6 +10,11 @@ export async function findUserByEmail(db: Db, email: string) {
   return user ?? null;
 }
 
+export async function findUserById(db: Db, userId: string) {
+  const [user] = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);
+  return user ?? null;
+}
+
 export async function updateUserLastLoginAt(db: Db, userId: string) {
   await db.update(schema.users).set({ lastLoginAt: new Date() }).where(eq(schema.users.id, userId));
 }
