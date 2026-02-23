@@ -3,6 +3,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../db/schema.js";
 import { hashPassword, verifyPassword } from "../lib/auth/password.js";
 import { AppError } from "../lib/errors.js";
+import type { StorageProvider } from "../lib/storage/provider.js";
 import { createRegisteredUser } from "../repositories/auth.repository.js";
 import { findProfileByUserId, findProfileLocalizationsByUserId } from "../repositories/profiles.repository.js";
 import { findSystemSettings } from "../repositories/system-settings.repository.js";
@@ -56,6 +57,7 @@ function toLocalizationMap(rows: Array<typeof schema.profileLocalizations.$infer
 }
 
 function toProfileResponse(
+  storage: StorageProvider,
   user: typeof schema.users.$inferSelect,
   profile: typeof schema.profiles.$inferSelect,
   localizations: Array<typeof schema.profileLocalizations.$inferSelect>,
@@ -70,7 +72,7 @@ function toProfileResponse(
     },
     profile: {
       public_id: profile.publicId,
-      photo_url: null,
+      photo_url: profile.photoObjectKey ? storage.resolvePublicUrl(profile.photoObjectKey) : null,
       email_public: profile.emailPublic,
       phone_number: profile.phoneNumber,
       pref_enable_th: profile.prefEnableTh,
@@ -82,15 +84,15 @@ function toProfileResponse(
   };
 }
 
-export async function register(db: Db, input: { email: string; password: string }) {
+export async function register(db: Db, input: { storage: StorageProvider; email: string; password: string }) {
   const email = input.email.trim().toLowerCase();
   const passwordHash = hashPassword(input.password);
 
   const result = await createRegisteredUser(db, { email, passwordHash });
-  return toProfileResponse(result.user, result.profile, result.localizations, result.settings);
+  return toProfileResponse(input.storage, result.user, result.profile, result.localizations, result.settings);
 }
 
-export async function login(db: Db, input: { email: string; password: string }) {
+export async function login(db: Db, input: { storage: StorageProvider; email: string; password: string }) {
   const email = input.email.trim().toLowerCase();
   const user = await findUserByEmail(db, email);
 
@@ -112,7 +114,7 @@ export async function login(db: Db, input: { email: string; password: string }) 
 
   return {
     user,
-    payload: toProfileResponse(user, profile, localizations, settings)
+    payload: toProfileResponse(input.storage, user, profile, localizations, settings)
   };
 }
 

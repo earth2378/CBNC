@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { requireAuth } from "../lib/auth/guard.js";
 import { isAppError } from "../lib/errors.js";
-import { notImplemented } from "../lib/http.js";
 import * as meService from "../services/me.service.js";
 
 const getMyProfileQuerySchema = z.object({
@@ -35,6 +34,9 @@ const updateMyProfileBodySchema = z.object({
 });
 
 const meRoutes: FastifyPluginAsync = async (app) => {
+  const maxPhotoBytes = 2 * 1024 * 1024;
+  const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
   app.get("/me/profile", async (request, reply) => {
     const parsedQuery = getMyProfileQuerySchema.safeParse(request.query);
     if (!parsedQuery.success) {
@@ -52,10 +54,12 @@ const meRoutes: FastifyPluginAsync = async (app) => {
         app.db,
         parsedQuery.data.langs
           ? {
+              storage: app.storage,
               userId: session.sub,
               langs: parsedQuery.data.langs
             }
           : {
+              storage: app.storage,
               userId: session.sub
             }
       );
@@ -107,6 +111,7 @@ const meRoutes: FastifyPluginAsync = async (app) => {
         >
       >;
       const payload = await meService.updateMyProfile(app.db, {
+        storage: app.storage,
         userId: session.sub,
         emailPublic: parsedBody.data.email_public,
         phoneNumber: parsedBody.data.phone_number,
@@ -136,8 +141,91 @@ const meRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.post("/me/photo", async (_request, reply) => {
-    return notImplemented(reply, "POST /me/photo");
+  app.post("/me/photo", async (request, reply) => {
+    try {
+      const session = requireAuth(app, request);
+      const part = await request.file();
+      if (!part) {
+        return reply.code(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "file is required"
+          }
+        });
+      }
+
+      if (!allowedMimeTypes.has(part.mimetype)) {
+        return reply.code(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "unsupported file type"
+          }
+        });
+      }
+
+      const buffer = await part.toBuffer();
+      if (buffer.length === 0 || buffer.length > maxPhotoBytes) {
+        return reply.code(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "file size must be between 1 byte and 2 MB"
+          }
+        });
+      }
+
+      const payload = await meService.uploadMyPhoto(app.db, {
+        storage: app.storage,
+        userId: session.sub,
+        mimeType: part.mimetype,
+        buffer
+      });
+      return reply.code(200).send(payload);
+    } catch (error) {
+      if (isAppError(error)) {
+        return reply.code(error.statusCode).send({
+          error: {
+            code: error.code,
+            message: error.message
+          }
+        });
+      }
+
+      request.log.error({ error }, "upload my photo failed");
+      return reply.code(500).send({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "unexpected server error"
+        }
+      });
+    }
+  });
+
+  app.delete("/me/photo", async (request, reply) => {
+    try {
+      const session = requireAuth(app, request);
+      const payload = await meService.deleteMyPhoto(app.db, {
+        storage: app.storage,
+        userId: session.sub
+      });
+      return reply.code(200).send(payload);
+    } catch (error) {
+      if (isAppError(error)) {
+        return reply.code(error.statusCode).send({
+          error: {
+            code: error.code,
+            message: error.message
+          }
+        });
+      }
+
+      request.log.error({ error }, "delete my photo failed");
+      return reply.code(500).send({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "unexpected server error"
+        }
+      });
+    }
   });
 };
 

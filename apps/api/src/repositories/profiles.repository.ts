@@ -54,6 +54,18 @@ export async function updateProfileNonLocalized(
   return updated[0] ?? null;
 }
 
+export async function updateProfilePhotoObjectKey(db: Db, input: { userId: string; photoObjectKey: string | null }) {
+  const updated = await db
+    .update(schema.profiles)
+    .set({
+      photoObjectKey: input.photoObjectKey
+    })
+    .where(eq(schema.profiles.userId, input.userId))
+    .returning();
+
+  return updated[0] ?? null;
+}
+
 export async function upsertProfileLocalization(
   db: Db,
   input: {

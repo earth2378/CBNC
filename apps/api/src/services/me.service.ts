@@ -2,10 +2,12 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import * as schema from "../db/schema.js";
 import { AppError } from "../lib/errors.js";
+import type { StorageProvider } from "../lib/storage/provider.js";
 import {
   findProfileByUserId,
   findProfileLocalizationsByUserId,
   updateProfileNonLocalized,
+  updateProfilePhotoObjectKey,
   upsertProfileLocalization
 } from "../repositories/profiles.repository.js";
 import { findSystemSettings } from "../repositories/system-settings.repository.js";
@@ -95,7 +97,7 @@ function toLocalizationMap(
   return mapped;
 }
 
-async function buildProfileResponse(db: Db, userId: string, langs?: string): Promise<ProfileResponse> {
+async function buildProfileResponse(db: Db, storage: StorageProvider, userId: string, langs?: string): Promise<ProfileResponse> {
   const [user, profile, localizations, settings] = await Promise.all([
     findUserById(db, userId),
     findProfileByUserId(db, userId),
@@ -118,7 +120,7 @@ async function buildProfileResponse(db: Db, userId: string, langs?: string): Pro
     },
     profile: {
       public_id: profile.publicId,
-      photo_url: null,
+      photo_url: profile.photoObjectKey ? storage.resolvePublicUrl(profile.photoObjectKey) : null,
       email_public: profile.emailPublic,
       phone_number: profile.phoneNumber,
       pref_enable_th: profile.prefEnableTh,
@@ -130,13 +132,14 @@ async function buildProfileResponse(db: Db, userId: string, langs?: string): Pro
   };
 }
 
-export async function getMyProfile(db: Db, input: { userId: string; langs?: string }) {
-  return buildProfileResponse(db, input.userId, input.langs);
+export async function getMyProfile(db: Db, input: { storage: StorageProvider; userId: string; langs?: string }) {
+  return buildProfileResponse(db, input.storage, input.userId, input.langs);
 }
 
 export async function updateMyProfile(
   db: Db,
   input: {
+    storage: StorageProvider;
     userId: string;
     emailPublic: string;
     phoneNumber: string;
@@ -199,5 +202,66 @@ export async function updateMyProfile(
     )
   );
 
-  return buildProfileResponse(db, input.userId);
+  return buildProfileResponse(db, input.storage, input.userId);
+}
+
+export async function uploadMyPhoto(
+  db: Db,
+  input: {
+    storage: StorageProvider;
+    userId: string;
+    mimeType: string;
+    buffer: Buffer;
+  }
+) {
+  const profile = await findProfileByUserId(db, input.userId);
+  if (!profile) {
+    throw new AppError(404, "NOT_FOUND", "profile not found");
+  }
+
+  const previousObjectKey = profile.photoObjectKey;
+  const uploaded = await input.storage.uploadProfilePhoto({
+    userId: input.userId,
+    mimeType: input.mimeType,
+    buffer: input.buffer
+  });
+
+  try {
+    await updateProfilePhotoObjectKey(db, {
+      userId: input.userId,
+      photoObjectKey: uploaded.objectKey
+    });
+  } catch (error) {
+    await input.storage.deleteObject(uploaded.objectKey);
+    throw error;
+  }
+
+  if (previousObjectKey && previousObjectKey !== uploaded.objectKey) {
+    await input.storage.deleteObject(previousObjectKey);
+  }
+
+  return {
+    photo_url: input.storage.resolvePublicUrl(uploaded.objectKey)
+  };
+}
+
+export async function deleteMyPhoto(db: Db, input: { storage: StorageProvider; userId: string }) {
+  const profile = await findProfileByUserId(db, input.userId);
+  if (!profile) {
+    throw new AppError(404, "NOT_FOUND", "profile not found");
+  }
+
+  const previousObjectKey = profile.photoObjectKey;
+  await updateProfilePhotoObjectKey(db, {
+    userId: input.userId,
+    photoObjectKey: null
+  });
+
+  if (previousObjectKey) {
+    await input.storage.deleteObject(previousObjectKey);
+  }
+
+  return {
+    photo_url: null
+  };
 }

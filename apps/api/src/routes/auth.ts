@@ -39,7 +39,10 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const payload = await authService.register(app.db, parsed.data);
+      const payload = await authService.register(app.db, {
+        storage: app.storage,
+        ...parsed.data
+      });
       setSessionCookie(app, reply, { id: payload.user.id, role: payload.user.role });
       return reply.code(201).send(payload);
     } catch (error) {
@@ -74,7 +77,10 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const result = await authService.login(app.db, parsed.data);
+      const result = await authService.login(app.db, {
+        storage: app.storage,
+        ...parsed.data
+      });
       setSessionCookie(app, reply, { id: result.user.id, role: result.user.role });
       return reply.code(200).send(result.payload);
     } catch (error) {

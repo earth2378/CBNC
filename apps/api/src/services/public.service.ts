@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import * as schema from "../db/schema.js";
 import { AppError } from "../lib/errors.js";
+import type { StorageProvider } from "../lib/storage/provider.js";
 import {
   findProfileByPublicId,
   findProfileLocalizationByUserIdAndLang,
@@ -65,7 +66,7 @@ function toLocalizationMap(
   return mapped;
 }
 
-export async function getPublicProfile(db: Db, input: { publicId: string; lang?: LanguageCode }) {
+export async function getPublicProfile(db: Db, input: { storage: StorageProvider; publicId: string; lang?: LanguageCode }) {
   const profile = await findProfileByPublicId(db, input.publicId);
   if (!profile) {
     throw new AppError(404, "NOT_FOUND", "public profile not found");
@@ -90,7 +91,7 @@ export async function getPublicProfile(db: Db, input: { publicId: string; lang?:
   return {
     profile: {
       public_id: profile.publicId,
-      photo_url: null,
+      photo_url: profile.photoObjectKey ? input.storage.resolvePublicUrl(profile.photoObjectKey) : null,
       email_public: profile.emailPublic,
       phone_number: profile.phoneNumber
     },

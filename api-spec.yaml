@@ -331,9 +331,39 @@ paths:
               schema:
                 type: object
                 properties:
-                  photo_url: { type: string }
+                  photo_url: { type: string, nullable: true }
               example:
                 photo_url: "https://cdn.example.com/photos/abc.jpg"
+        "400":
+          description: Validation error (bad mime, size too large, missing file)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+    delete:
+      tags: [Me]
+      summary: Remove my profile photo
+      security: [{ cookieAuth: [] }]
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photo_url: { type: string, nullable: true }
+              example:
+                photo_url: null
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
 
   /public/profiles/{public_id}:
     get:

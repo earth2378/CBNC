@@ -36,10 +36,12 @@ const publicRoutes: FastifyPluginAsync = async (app) => {
         app.db,
         queryParsed.data.lang
           ? {
+              storage: app.storage,
               publicId: paramsParsed.data.public_id,
               lang: queryParsed.data.lang
             }
           : {
+              storage: app.storage,
               publicId: paramsParsed.data.public_id
             }
       );
