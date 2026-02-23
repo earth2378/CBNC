@@ -29,7 +29,11 @@ export async function listUsers(db: Db) {
   };
 }
 
-export async function updateUserActivation(db: Db, input: { userId: string; isActive: boolean }) {
+export async function updateUserActivation(db: Db, input: { actorUserId: string; userId: string; isActive: boolean }) {
+  if (input.actorUserId === input.userId && input.isActive === false) {
+    throw new AppError(400, "SELF_DEACTIVATION_NOT_ALLOWED", "admin cannot deactivate own account");
+  }
+
   const updatedUser = await setUserActiveStatus(db, input.userId, input.isActive);
 
   if (!updatedUser) {

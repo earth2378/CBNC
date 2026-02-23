@@ -56,8 +56,9 @@ const adminRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      requireAdmin(app, request);
+      const session = requireAdmin(app, request);
       const updatedUser = await adminService.updateUserActivation(app.db, {
+        actorUserId: session.sub,
         userId: paramsParsed.data.user_id,
         isActive: bodyParsed.data.is_active
       });

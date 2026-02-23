@@ -49,11 +49,17 @@ function mapLocalizationRow(row: typeof schema.profileLocalizations.$inferSelect
   };
 }
 
-function toLocalizationMap(rows: Array<typeof schema.profileLocalizations.$inferSelect>) {
+function toLocalizationMap(
+  rows: Array<typeof schema.profileLocalizations.$inferSelect>,
+  enabledLangs: LanguageCode[]
+) {
   const mapped: Partial<Record<LanguageCode, Localization>> = {};
+  const allowed = new Set(enabledLangs);
 
   for (const row of rows) {
-    mapped[row.lang] = mapLocalizationRow(row);
+    if (allowed.has(row.lang)) {
+      mapped[row.lang] = mapLocalizationRow(row);
+    }
   }
 
   return mapped;
@@ -66,6 +72,10 @@ export async function getPublicProfile(db: Db, input: { publicId: string; lang?:
   }
 
   const settings = await findSystemSettings(db);
+  const enabledLangs = getEnabledLangs(profile, settings);
+  if (input.lang && !enabledLangs.includes(input.lang)) {
+    throw new AppError(404, "NOT_FOUND", "language not available");
+  }
   let localizations: Array<typeof schema.profileLocalizations.$inferSelect> = [];
 
   if (input.lang) {
@@ -84,11 +94,11 @@ export async function getPublicProfile(db: Db, input: { publicId: string; lang?:
       email_public: profile.emailPublic,
       phone_number: profile.phoneNumber
     },
-    enabled_langs: getEnabledLangs(profile, settings),
+    enabled_langs: enabledLangs,
     localizations: input.lang
       ? {
           [input.lang]: mapLocalizationRow(localizations[0] ?? null)
         }
-      : toLocalizationMap(localizations)
+      : toLocalizationMap(localizations, enabledLangs)
   };
 }
