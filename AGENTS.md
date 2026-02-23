@@ -43,6 +43,14 @@ CBNC/
 - Export (private): `GET /me/qr.png`, `GET /me/card.pdf`, `GET /me/card.jpg`
 - Export (public): `GET /public/profiles/{public_id}/card.pdf`, `GET /public/profiles/{public_id}/card.jpg`
 
+## Current Delivery Scope (Backend)
+- Keep all endpoints above in contract/spec.
+- Implemented now: Auth, Me profile (`GET/PUT`), Me photo (`POST /me/photo`, `DELETE /me/photo`), Public profile (`GET`), Admin user management.
+- `photo_url` is included in `/me/profile` and `/public/profiles/{public_id}` responses.
+- Storage strategy in code: `local` provider works in Phase 1; `s3` provider is scaffolded for later production wiring.
+- Deferred for now (keep `NOT_IMPLEMENTED`): `GET /me/qr.png`, `GET /me/card.pdf`, `GET /me/card.jpg`, `GET /public/profiles/{public_id}/card.pdf`, `GET /public/profiles/{public_id}/card.jpg`.
+- Admin photo manage endpoints are Phase 2+: `POST /admin/users/{user_id}/photo`, `DELETE /admin/users/{user_id}/photo`.
+
 ## Definition of Done (Feature-Level)
 - Request validation + clear error responses.
 - Auth/role guard applied correctly.
