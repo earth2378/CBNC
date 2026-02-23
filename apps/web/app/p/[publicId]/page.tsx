@@ -22,10 +22,30 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiFetch<PublicProfileResponse>(`/public/profiles/${params.publicId}?lang=${lang}`)
-      .then(setData)
+    apiFetch<PublicProfileResponse>(`/public/profiles/${params.publicId}`)
+      .then((payload) => {
+        setData(payload);
+        if (payload.enabled_langs.length > 0) {
+          const firstEnabled = payload.enabled_langs[0];
+          if (firstEnabled) {
+            setLang((prev) => (payload.enabled_langs.includes(prev) ? prev : firstEnabled));
+          }
+        }
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load public card"));
-  }, [params.publicId, lang]);
+  }, [params.publicId]);
+
+  useEffect(() => {
+    if (!data || data.enabled_langs.length === 0) {
+      return;
+    }
+    if (!data.enabled_langs.includes(lang)) {
+      const firstEnabled = data.enabled_langs[0];
+      if (firstEnabled) {
+        setLang(firstEnabled);
+      }
+    }
+  }, [data, lang]);
 
   const card = data?.localizations?.[lang];
 
@@ -34,11 +54,20 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       <h2 style={{ marginTop: 0 }}>Public Name Card</h2>
       <div className="field">
         <label>Language</label>
-        <select value={lang} onChange={(e) => setLang(e.target.value as "th" | "en" | "zh")}>
-          <option value="th">TH</option>
-          <option value="en">EN</option>
-          <option value="zh">ZH</option>
-        </select>
+        <div className="row">
+          {(data?.enabled_langs ?? []).map((code) => (
+            <button
+              key={code}
+              type="button"
+              className={lang === code ? "" : "secondary"}
+              onClick={() => setLang(code)}
+              style={{ minWidth: 64 }}
+              aria-pressed={lang === code}
+            >
+              {code.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </div>
       {error && <p className="error">{error}</p>}
       {!data && !error && <p>Loading...</p>}

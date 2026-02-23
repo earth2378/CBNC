@@ -12,8 +12,13 @@ type UserSummary = {
   created_at: string;
 };
 
+type MeProfileResponse = {
+  user: { id: string };
+};
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserSummary[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
   const [error, setError] = useState("");
 
   async function load() {
@@ -28,6 +33,15 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    apiFetch<MeProfileResponse>("/me/profile")
+      .then((data) => setCurrentUserId(data.user.id))
+      .catch(() => {
+        // Keep admin list usable even if current-user lookup fails.
+        setCurrentUserId("");
+      });
   }, []);
 
   const stats = useMemo(() => {
@@ -68,7 +82,11 @@ export default function AdminUsersPage() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
+            {users.map((user) => {
+              const isCurrentUser = user.id === currentUserId;
+              const isSelfDeactivateAction = isCurrentUser && user.is_active;
+
+              return (
               <tr key={user.id}>
                 <td>{user.email}</td>
                 <td>
@@ -82,7 +100,9 @@ export default function AdminUsersPage() {
                 <td>{new Date(user.created_at).toLocaleDateString()}</td>
                 <td>
                   <button
-                    className={user.is_active ? "danger" : "secondary"}
+                    className={isSelfDeactivateAction ? "secondary" : user.is_active ? "danger" : "secondary"}
+                    disabled={isSelfDeactivateAction}
+                    title={isSelfDeactivateAction ? "You cannot deactivate your own account" : undefined}
                     onClick={async () => {
                       try {
                         await apiFetch(`/admin/users/${user.id}`, {
@@ -95,11 +115,11 @@ export default function AdminUsersPage() {
                       }
                     }}
                   >
-                    {user.is_active ? "Deactivate" : "Activate"}
+                    {isSelfDeactivateAction ? "Current Account" : user.is_active ? "Deactivate" : "Activate"}
                   </button>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>

@@ -19,3 +19,4 @@ npm --workspace @cbnc/web run dev
 ## Notes
 - Frontend calls backend through rewrite prefix: `/backend/*`
 - Configure backend target with `BACKEND_ORIGIN` (default `http://localhost:3001`)
+- Optional: set `NEXT_PUBLIC_APP_ORIGIN` for public links/QR generation (default uses browser origin)

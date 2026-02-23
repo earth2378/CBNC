@@ -34,6 +34,7 @@ export default function MyProfilePage() {
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [savePopup, setSavePopup] = useState<{ open: boolean; ok: boolean; message: string }>({
     open: false,
     ok: true,
@@ -60,6 +61,14 @@ export default function MyProfilePage() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [savePopup.open]);
+
+  useEffect(() => {
+    if (!copied) {
+      return;
+    }
+    const timer = window.setTimeout(() => setCopied(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -120,10 +129,40 @@ export default function MyProfilePage() {
     }
   }
 
+  async function onDownloadQr() {
+    try {
+      const response = await fetch(`${qrUrl}&format=png`);
+      if (!response.ok) {
+        throw new Error(`Failed to download QR (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `cbnc-qr-${data?.profile.public_id ?? "profile"}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      setSavePopup({
+        open: true,
+        ok: false,
+        message: "Unable to download QR right now. Please try again."
+      });
+    }
+  }
+
   if (!data) {
     return <div className="card">Loading profile...</div>;
   }
   const profile = data.profile;
+  const publicPath = `/p/${data.profile.public_id}`;
+  const configuredOrigin = process.env.NEXT_PUBLIC_APP_ORIGIN?.replace(/\/$/, "");
+  const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const publicUrl = `${configuredOrigin || runtimeOrigin}${publicPath}`;
+  const qrUrl = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(publicUrl)}`;
 
   function isLanguageEnabled(lang: LanguageCode) {
     if (lang === "th") return profile.pref_enable_th;
@@ -291,11 +330,124 @@ export default function MyProfilePage() {
         </form>
         </div>
 
-      <div className="card">
+        <div className="card">
         <h2 style={{ marginTop: 0 }}>Live Preview</h2>
-        <p className="card-soft" style={{ marginTop: 0 }}>
-          Public URL: <a href={`/p/${data.profile.public_id}`}>{`/p/${data.profile.public_id}`}</a>
-        </p>
+
+        <div className="card-soft" style={{ marginBottom: 10, textAlign: "center" }}>
+          <img
+            src={qrUrl}
+            alt="Public profile QR code"
+            width={180}
+            height={180}
+            style={{ borderRadius: 10, border: "1px solid #dbe2f0", background: "#fff" }}
+          />
+          <div
+            className="row"
+            style={{ justifyContent: "center", marginTop: 8, flexWrap: "nowrap", overflowX: "auto", gap: 8 }}
+          >
+            <button
+              type="button"
+              className={copied ? "" : "secondary"}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                whiteSpace: "nowrap",
+                fontSize: "0.84rem",
+                padding: "8px 10px"
+              }}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(publicUrl);
+                  setCopied(true);
+                } catch {
+                  setSavePopup({
+                    open: true,
+                    ok: false,
+                    message: "Unable to copy link. Please copy it manually."
+                  });
+                }
+              }}
+            >
+              <span aria-hidden="true" style={{ display: "inline-flex" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M16 4H8C6.89543 4 6 4.89543 6 6V18C6 19.1046 6.89543 20 8 20H16C17.1046 20 18 19.1046 18 18V6C18 4.89543 17.1046 4 16 4Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 4V3C9 2.44772 9.44772 2 10 2H14C14.5523 2 15 2.44772 15 3V4"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              {copied ? "Copied!" : "Copy Link"}
+            </button>
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                borderRadius: 10,
+                border: "1px solid #cbd5e1",
+                background: "#ffffff",
+                color: "#334155",
+                textDecoration: "none",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                fontSize: "0.84rem"
+              }}
+            >
+              <span aria-hidden="true" style={{ display: "inline-flex" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M10 14L14 10M8.5 7H6.8C5.11984 7 4.27976 7 3.63803 7.32698C3.07354 7.6146 2.6146 8.07354 2.32698 8.63803C2 9.27976 2 10.1198 2 11.8V17.2C2 18.8802 2 19.7202 2.32698 20.362C2.6146 20.9265 3.07354 21.3854 3.63803 21.673C4.27976 22 5.11984 22 6.8 22H12.2C13.8802 22 14.7202 22 15.362 21.673C15.9265 21.3854 16.3854 20.9265 16.673 20.362C17 19.7202 17 18.8802 17 17.2V15.5M15.5 2H21.5M21.5 2V8M21.5 2L13 10.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              Open Link
+            </a>
+            <button
+              type="button"
+              onClick={onDownloadQr}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                whiteSpace: "nowrap",
+                fontSize: "0.84rem",
+                padding: "8px 10px"
+              }}
+            >
+              <span aria-hidden="true" style={{ display: "inline-flex" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 3V15M12 15L7 10M12 15L17 10M4 17V19C4 19.5304 4.21071 20.0391 4.58579 20.4142C4.96086 20.7893 5.46957 21 6 21H18C18.5304 21 19.0391 20.7893 19.4142 20.4142C19.7893 20.0391 20 19.5304 20 19V17"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              Save QR as PNG
+            </button>
+          </div>
+        </div>
 
         {enabledLanguages.map((lang) => {
           const v = data.localizations[lang] || fallbackLocalization;

@@ -51,12 +51,17 @@ export default function SiteHeader() {
     };
   }, [pathname]);
 
+  const isPublicProfilePage = pathname.startsWith("/p/");
+
   const links = useMemo(() => {
     if (loading) {
       return [] as Array<{ href: string; label: string }>;
     }
 
     if (!authUser) {
+      if (isPublicProfilePage) {
+        return [] as Array<{ href: string; label: string }>;
+      }
       return [
         { href: "/register", label: "Register" },
         { href: "/login", label: "Login" }
@@ -68,7 +73,7 @@ export default function SiteHeader() {
       result.push({ href: "/admin/users", label: "Admin" });
     }
     return result;
-  }, [authUser, loading]);
+  }, [authUser, isPublicProfilePage, loading]);
 
   return (
     <header className="site-header">
