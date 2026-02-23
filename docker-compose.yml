@@ -7,10 +7,11 @@ services:
       POSTGRES_DB: cbnc
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5433:5432"
     volumes:
-      - cbnc_pg_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d cbnc"]
       interval: 5s
@@ -19,7 +20,7 @@ services:
 
   api:
     build:
-      context: ../..
+      context: .
       dockerfile: apps/api/Dockerfile
     container_name: cbnc-api
     restart: unless-stopped
@@ -30,11 +31,26 @@ services:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/cbnc
       SESSION_COOKIE_NAME: session
       SESSION_SECRET: change-me
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      STORAGE_PUBLIC_BASE_URL: ${STORAGE_PUBLIC_BASE_URL:-http://localhost:3001}
+      LOCAL_UPLOAD_DIR: ${LOCAL_UPLOAD_DIR:-uploads}
     ports:
       - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
 
-volumes:
-  cbnc_pg_data:
+  web:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: cbnc-web
+    restart: unless-stopped
+    environment:
+      BACKEND_ORIGIN: http://api:3001
+      NEXT_PUBLIC_APP_ORIGIN: ${NEXT_PUBLIC_APP_ORIGIN:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api

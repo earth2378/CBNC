@@ -16,6 +16,17 @@ npm install
 npm --workspace @cbnc/web run dev
 ```
 
+## Docker (Monorepo Compose)
+Run full stack from repo root:
+```bash
+docker compose --profile full up -d --build
+```
+
+Run backend only (recommended while developing Next.js locally with hot reload):
+```bash
+docker compose up -d --build api postgres
+```
+
 ## Notes
 - Frontend calls backend through rewrite prefix: `/backend/*`
 - Configure backend target with `BACKEND_ORIGIN` (default `http://localhost:3001`)

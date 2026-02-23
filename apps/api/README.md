@@ -11,11 +11,15 @@ cp apps/api/.env.example apps/api/.env
 ```bash
 npm install
 ```
-3. Start PostgreSQL only (Docker, host port `5433`):
+3. Optional: configure compose env overrides at repo root:
 ```bash
-docker compose -f apps/api/docker-compose.yml up -d postgres
+cp .env.example .env
 ```
-4. Run dev server:
+4. Start PostgreSQL only (Docker, host port `5433`):
+```bash
+docker compose up -d postgres
+```
+5. Run dev server:
 ```bash
 npm run dev:api
 ```
@@ -48,11 +52,18 @@ Open Drizzle Studio:
 npm run db:studio
 ```
 
-## Full Docker (API + DB)
-Run both API and PostgreSQL in Docker:
+## Full Docker (Web + API + DB)
+Run full stack (Web + API + PostgreSQL) in Docker:
 ```bash
-docker compose -f apps/api/docker-compose.yml up -d --build
+docker compose --profile full up -d --build
 ```
+
+Run backend only (API + PostgreSQL), then run web locally for hot reload:
+```bash
+docker compose up -d --build api postgres
+```
+
+For other devices on your LAN, set `STORAGE_PUBLIC_BASE_URL` in repo-root `.env` to your machine IP (example: `http://192.168.1.10:3001`).
 
 ## Current Status
 - All Phase 1 routes are scaffolded.

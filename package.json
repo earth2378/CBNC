@@ -19,6 +19,10 @@
     "dev:web": "npm --workspace @cbnc/web run dev",
     "build:web": "npm --workspace @cbnc/web run build",
     "start:web": "npm --workspace @cbnc/web run start",
-    "typecheck:web": "npm --workspace @cbnc/web run typecheck"
+    "typecheck:web": "npm --workspace @cbnc/web run typecheck",
+    "docker:up": "docker compose up -d --build",
+    "docker:up:backend": "docker compose up -d --build api postgres",
+    "docker:up:full": "docker compose --profile full up -d --build",
+    "docker:down": "docker compose down"
   }
 }
