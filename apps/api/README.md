@@ -11,7 +11,11 @@ cp apps/api/.env.example apps/api/.env
 ```bash
 npm install
 ```
-3. Run dev server:
+3. Start PostgreSQL only (Docker, host port `5433`):
+```bash
+docker compose -f apps/api/docker-compose.yml up -d postgres
+```
+4. Run dev server:
 ```bash
 npm run dev:api
 ```
@@ -29,9 +33,25 @@ Push schema directly to DB (prototype/dev):
 npm run db:push
 ```
 
+Seed mock data (admin + employee):
+```bash
+npm run db:seed
+```
+
+Push schema and seed in one command:
+```bash
+npm run db:setup
+```
+
 Open Drizzle Studio:
 ```bash
 npm run db:studio
+```
+
+## Full Docker (API + DB)
+Run both API and PostgreSQL in Docker:
+```bash
+docker compose -f apps/api/docker-compose.yml up -d --build
 ```
 
 ## Current Status
