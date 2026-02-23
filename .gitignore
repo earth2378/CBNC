@@ -37,3 +37,7 @@ next-env.d.ts
 
 # api build output
 apps/api/dist
+
+apps/mock-web
+# next build output
+apps/web/.next

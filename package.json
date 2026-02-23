@@ -13,6 +13,12 @@
     "typecheck": "npm --workspace apps/api run typecheck",
     "db:generate": "npm --workspace apps/api run db:generate",
     "db:push": "npm --workspace apps/api run db:push",
-    "db:studio": "npm --workspace apps/api run db:studio"
+    "db:studio": "npm --workspace apps/api run db:studio",
+    "db:seed": "npm --workspace apps/api run db:seed",
+    "db:setup": "npm --workspace apps/api run db:setup",
+    "dev:web": "npm --workspace @cbnc/web run dev",
+    "build:web": "npm --workspace @cbnc/web run build",
+    "start:web": "npm --workspace @cbnc/web run start",
+    "typecheck:web": "npm --workspace @cbnc/web run typecheck"
   }
 }
