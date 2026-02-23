@@ -9,7 +9,8 @@ export class ApiError extends Error {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const hasBody = typeof init?.body !== "undefined" && init.body !== null;
-  const defaultHeaders = hasBody ? { "Content-Type": "application/json" } : {};
+  const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
+  const defaultHeaders = hasBody && !isFormData ? { "Content-Type": "application/json" } : {};
 
   const response = await fetch(`/backend${path}`, {
     credentials: "include",

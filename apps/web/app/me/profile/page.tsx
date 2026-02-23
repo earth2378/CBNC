@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import { apiFetch } from "../../../src/lib/api";
 
@@ -8,6 +8,7 @@ type ProfileResponse = {
   user: { id: string; email: string; role: "employee" | "admin"; is_active: boolean };
   profile: {
     public_id: string;
+    photo_url: string | null;
     email_public: string;
     phone_number: string;
     pref_enable_th: boolean;
@@ -34,6 +35,7 @@ export default function MyProfilePage() {
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [copied, setCopied] = useState(false);
   const [savePopup, setSavePopup] = useState<{ open: boolean; ok: boolean; message: string }>({
     open: false,
@@ -154,6 +156,97 @@ export default function MyProfilePage() {
     }
   }
 
+  async function onPhotoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !data) {
+      return;
+    }
+
+    const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (!allowedMimeTypes.has(file.type)) {
+      setSavePopup({
+        open: true,
+        ok: false,
+        message: "Only JPG, PNG, and WEBP images are allowed."
+      });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setSavePopup({
+        open: true,
+        ok: false,
+        message: "Photo size must be 2 MB or less."
+      });
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const payload = await apiFetch<{ photo_url: string | null }>("/me/photo", {
+        method: "POST",
+        body: formData
+      });
+
+      setData({
+        ...data,
+        profile: {
+          ...data.profile,
+          photo_url: payload.photo_url
+        }
+      });
+      setSavePopup({
+        open: true,
+        ok: true,
+        message: "Photo uploaded successfully."
+      });
+    } catch (e) {
+      setSavePopup({
+        open: true,
+        ok: false,
+        message: e instanceof Error ? e.message : "Failed to upload photo."
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  async function onPhotoRemove() {
+    if (!data) {
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      await apiFetch<{ photo_url: string | null }>("/me/photo", {
+        method: "DELETE"
+      });
+      setData({
+        ...data,
+        profile: {
+          ...data.profile,
+          photo_url: null
+        }
+      });
+      setSavePopup({
+        open: true,
+        ok: true,
+        message: "Photo removed successfully."
+      });
+    } catch (e) {
+      setSavePopup({
+        open: true,
+        ok: false,
+        message: e instanceof Error ? e.message : "Failed to remove photo."
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
   if (!data) {
     return <div className="card">Loading profile...</div>;
   }
@@ -210,6 +303,87 @@ export default function MyProfilePage() {
         <p style={{ color: "#475467", marginTop: 0 }}>
           Manage localized card data and public contact fields.
         </p>
+
+        <div className="card-soft" style={{ marginBottom: 12 }}>
+          <div className="row" style={{ alignItems: "center", justifyContent: "space-between" }}>
+            <div className="row" style={{ alignItems: "center", gap: 10 }}>
+              {data.profile.photo_url ? (
+                <img
+                  src={data.profile.photo_url}
+                  alt="Profile photo"
+                  width={96}
+                  height={96}
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: 10,
+                    objectFit: "contain",
+                    border: "1px solid #dbe2f0",
+                    background: "#ffffff"
+                  }}
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: 10,
+                    border: "1px dashed #94a3b8",
+                    color: "#64748b",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: "0.75rem",
+                    background: "#f8fafc"
+                  }}
+                >
+                  No Photo
+                </div>
+              )}
+              <div>
+                <strong>Profile Photo</strong>
+                <p style={{ margin: "4px 0 0", fontSize: "0.84rem", color: "#64748b" }}>
+                  JPG, PNG, WEBP up to 2 MB.
+                </p>
+              </div>
+            </div>
+
+            <div className="row" style={{ gap: 8 }}>
+              <label style={{ margin: 0, display: "inline-block" }}>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  style={{ display: "none" }}
+                  onChange={onPhotoUpload}
+                  disabled={uploadingPhoto}
+                />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    background: "#334155",
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: uploadingPhoto ? "not-allowed" : "pointer",
+                    opacity: uploadingPhoto ? 0.65 : 1
+                  }}
+                >
+                  {uploadingPhoto ? "Working..." : "Upload"}
+                </span>
+              </label>
+              <button
+                type="button"
+                className="secondary"
+                onClick={onPhotoRemove}
+                disabled={uploadingPhoto || !data.profile.photo_url}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={onSubmit}>
           <div className="field">

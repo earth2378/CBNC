@@ -7,6 +7,7 @@ import { apiFetch } from "../../../src/lib/api";
 type PublicProfileResponse = {
   profile: {
     public_id: string;
+    photo_url: string | null;
     email_public: string;
     phone_number: string;
   };
@@ -73,6 +74,24 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       {!data && !error && <p>Loading...</p>}
       {data && (
         <div className="card-soft">
+          {data.profile.photo_url && (
+            <img
+              src={data.profile.photo_url}
+              alt={`${card?.full_name || "Profile"} photo`}
+              width={120}
+              height={120}
+              style={{
+                width: 120,
+                height: 120,
+                borderRadius: 10,
+                objectFit: "contain",
+                border: "1px solid #dbe2f0",
+                background: "#ffffff",
+                display: "block",
+                margin: "0 auto 10px"
+              }}
+            />
+          )}
           <h3 style={{ marginTop: 0 }}>{card?.full_name || "-"}</h3>
           <dl className="kv">
             <dt>Position</dt>
