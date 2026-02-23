@@ -13,7 +13,8 @@ export async function createRegisteredUser(db: Db, params: { email: string; pass
         .insert(schema.users)
         .values({
           email: params.email,
-          passwordHash: params.passwordHash
+          passwordHash: params.passwordHash,
+          isActive: true
         })
         .returning();
       const user = insertedUsers[0];

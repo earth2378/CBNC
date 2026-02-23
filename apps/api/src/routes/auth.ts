@@ -40,6 +40,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const payload = await authService.register(app.db, parsed.data);
+      setSessionCookie(app, reply, { id: payload.user.id, role: payload.user.role });
       return reply.code(201).send(payload);
     } catch (error) {
       if (isAppError(error)) {
@@ -96,8 +97,13 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  app.post("/auth/logout", async (_request, reply) => {
-    clearSessionCookie(app, reply);
+  app.post("/auth/logout", async (request, reply) => {
+    try {
+      clearSessionCookie(app, reply);
+    } catch (error) {
+      // Logout should be best-effort and not fail the client flow.
+      request.log.warn({ error }, "logout cookie clear failed");
+    }
     return reply.code(204).send();
   });
 

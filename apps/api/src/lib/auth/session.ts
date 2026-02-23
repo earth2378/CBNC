@@ -14,19 +14,29 @@ export function setSessionCookie(
   user: { id: string; role: "employee" | "admin" }
 ) {
   const payload = Buffer.from(JSON.stringify({ sub: user.id, role: user.role }), "utf8").toString("base64url");
+  const secure = app.env.NODE_ENV === "production";
 
   reply.setCookie(app.env.SESSION_COOKIE_NAME, payload, {
     httpOnly: true,
     signed: true,
     path: "/",
     sameSite: "lax",
-    secure: app.env.NODE_ENV === "production",
+    secure,
     maxAge: 60 * 60 * 24 * 7
   });
 }
 
 export function clearSessionCookie(app: FastifyInstance, reply: FastifyReply) {
-  reply.clearCookie(app.env.SESSION_COOKIE_NAME, { path: "/" });
+  const secure = app.env.NODE_ENV === "production";
+  reply.clearCookie(app.env.SESSION_COOKIE_NAME, {
+    httpOnly: true,
+    signed: true,
+    path: "/",
+    sameSite: "lax",
+    secure,
+    expires: new Date(0),
+    maxAge: 0
+  });
 }
 
 export function readSessionCookie(app: FastifyInstance, request: FastifyRequest): SessionClaims | null {
