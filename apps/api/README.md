@@ -66,6 +66,11 @@ docker compose up -d --build api postgres
 For other devices on your LAN, set `STORAGE_PUBLIC_BASE_URL` in repo-root `.env` to your machine IP (example: `http://192.168.1.10:3001`).
 
 ## Current Status
-- All Phase 1 routes are scaffolded.
-- Business logic and DB integration are not implemented yet.
-- Non-health endpoints currently return `501 NOT_IMPLEMENTED`.
+- Implemented: auth, me profile (`GET/PUT`), me photo (`POST/DELETE`), public profile (`GET`), admin user list/activation.
+- Public/profile photo storage uses local provider in Phase 1 (`s3` scaffold exists but is not implemented yet).
+- Export endpoints remain deferred and currently return `501 NOT_IMPLEMENTED`:
+  - `GET /me/qr.png`
+  - `GET /me/card.pdf`
+  - `GET /me/card.jpg`
+  - `GET /public/profiles/{public_id}/card.pdf`
+  - `GET /public/profiles/{public_id}/card.jpg`
