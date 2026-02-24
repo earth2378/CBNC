@@ -70,6 +70,8 @@ export function buildApp() {
         ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".webp" ? "image/webp" : "application/octet-stream";
 
       reply.header("Content-Type", contentType);
+      reply.header("Access-Control-Allow-Origin", "*");
+      reply.header("Cross-Origin-Resource-Policy", "cross-origin");
       return reply.send(createReadStream(filePath));
     } catch {
       return reply.code(404).send({
