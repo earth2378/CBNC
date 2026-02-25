@@ -17,6 +17,16 @@ type PublicProfileResponse = {
   >;
 };
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
 export default function PublicPage({ params }: { params: { publicId: string } }) {
   const [lang, setLang] = useState<"th" | "en" | "zh">("en");
   const [data, setData] = useState<PublicProfileResponse | null>(null);
@@ -40,14 +50,10 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   }, [params.publicId]);
 
   useEffect(() => {
-    if (!data || data.enabled_langs.length === 0) {
-      return;
-    }
+    if (!data || data.enabled_langs.length === 0) return;
     if (!data.enabled_langs.includes(lang)) {
       const firstEnabled = data.enabled_langs[0];
-      if (firstEnabled) {
-        setLang(firstEnabled);
-      }
+      if (firstEnabled) setLang(firstEnabled);
     }
   }, [data, lang]);
 
@@ -83,9 +89,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   }
 
   async function loadScript(src: string) {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      return;
-    }
+    if (document.querySelector(`script[src="${src}"]`)) return;
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
       script.src = src;
@@ -97,15 +101,15 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   }
 
   async function renderCardCanvas() {
-    if (!cardRef.current) {
-      throw new Error("card not found");
-    }
+    if (!cardRef.current) throw new Error("card not found");
 
     await loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-    const html2canvas = (window as typeof window & { html2canvas?: (node: HTMLElement, options?: object) => Promise<HTMLCanvasElement> }).html2canvas;
-    if (!html2canvas) {
-      throw new Error("html2canvas unavailable");
-    }
+    const html2canvas = (
+      window as typeof window & {
+        html2canvas?: (node: HTMLElement, options?: object) => Promise<HTMLCanvasElement>;
+      }
+    ).html2canvas;
+    if (!html2canvas) throw new Error("html2canvas unavailable");
 
     return html2canvas(cardRef.current, {
       scale: 2,
@@ -138,9 +142,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       const canvas = await renderCardCanvas();
       const blob = await canvasToJpegBlob(canvas, 0.95);
       const file = new File([blob], getExportName("jpg"), { type: "image/jpeg" });
-      const nav = navigator as Navigator & {
-        canShare?: (data?: ShareData) => boolean;
-      };
+      const nav = navigator as Navigator & { canShare?: (data?: ShareData) => boolean };
 
       if (nav.share && nav.canShare?.({ files: [file] })) {
         await nav.share({
@@ -184,19 +186,23 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       const dataUrl = canvas.toDataURL("image/png");
 
       await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js");
-      const JsPdfCtor = (window as typeof window & { jspdf?: { jsPDF?: new (options?: object) => { internal: { pageSize: { getWidth: () => number; getHeight: () => number } }; addImage: (data: string, format: string, x: number, y: number, w: number, h: number) => void; save: (name: string) => void } } }).jspdf?.jsPDF;
-      if (!JsPdfCtor) {
-        throw new Error("jspdf unavailable");
-      }
+      const JsPdfCtor = (
+        window as typeof window & {
+          jspdf?: {
+            jsPDF?: new (options?: object) => {
+              internal: { pageSize: { getWidth: () => number; getHeight: () => number } };
+              addImage: (data: string, format: string, x: number, y: number, w: number, h: number) => void;
+              save: (name: string) => void;
+            };
+          };
+        }
+      ).jspdf?.jsPDF;
+      if (!JsPdfCtor) throw new Error("jspdf unavailable");
 
       const width = canvas.width || 1200;
       const height = canvas.height || 800;
       const isLandscape = width > height;
-      const pdf = new JsPdfCtor({
-        orientation: isLandscape ? "landscape" : "portrait",
-        unit: "pt",
-        format: "a4"
-      });
+      const pdf = new JsPdfCtor({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" });
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -218,80 +224,195 @@ export default function PublicPage({ params }: { params: { publicId: string } })
     }
   }
 
-  return (
-    <div className="auth-wrap card">
-      <h2 style={{ marginTop: 0 }}>Public Name Card</h2>
-      <div className="field">
-        <label>Language</label>
-        <div className="row">
-          {(data?.enabled_langs ?? []).map((code) => (
-            <button
-              key={code}
-              type="button"
-              className={lang === code ? "" : "secondary"}
-              onClick={() => setLang(code)}
-              style={{ minWidth: 64 }}
-              aria-pressed={lang === code}
-            >
-              {code.toUpperCase()}
-            </button>
-          ))}
+  if (error) {
+    return (
+      <div className="public-page">
+        <div className="public-card-wrap">
+          <div className="card" style={{ textAlign: "center", padding: "40px 24px" }}>
+            <p style={{ color: "#b42318", margin: 0 }}>{error}</p>
+          </div>
         </div>
       </div>
-      {error && <p className="error">{error}</p>}
-      {!data && !error && <p>Loading...</p>}
-      {data && (
-        <>
-          <div className="card-soft" ref={cardRef}>
-            {data.profile.photo_url && (
-              <div
-                role="img"
-                aria-label={`${card?.full_name || "Profile"} photo`}
-                style={{
-                  width: 120,
-                  height: 120,
-                  borderRadius: 10,
-                  border: "1px solid #dbe2f0",
-                  backgroundColor: "#ffffff",
-                  backgroundImage: `url("${data.profile.photo_url}")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "center",
-                  backgroundSize: "contain",
-                  display: "block",
-                  margin: "0 auto 10px"
-                }}
-              />
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="public-page">
+        <div className="public-card-wrap">
+          <div className="card" style={{ textAlign: "center", padding: "40px 24px" }}>
+            <p style={{ color: "#64748b", margin: 0 }}>Loading…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const initials = card?.full_name ? getInitials(card.full_name) : "?";
+
+  return (
+    <div className="public-page">
+      <div className="public-card-wrap">
+        {/* Language tabs — above the card */}
+        {data.enabled_langs.length > 1 && (
+          <div className="lang-tabs" style={{ marginBottom: 12 }}>
+            {data.enabled_langs.map((code) => (
+              <button
+                key={code}
+                type="button"
+                className={`lang-tab${lang === code ? " active" : ""}`}
+                onClick={() => setLang(code)}
+                aria-pressed={lang === code}
+              >
+                {code.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Card — captured for export */}
+        <div className="public-card" ref={cardRef}>
+          {/* Gradient header banner */}
+          <div className="public-card-header" />
+
+          {/* Avatar overlapping the header */}
+          <div className="public-card-avatar-wrap">
+            <div className="public-card-avatar">
+              {data.profile.photo_url ? (
+                <img src={data.profile.photo_url} alt={card?.full_name ?? "Profile photo"} />
+              ) : (
+                <div className="public-card-avatar-initials">{initials}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Card body */}
+          <div className="public-card-body">
+            <h2 className="public-card-name">{card?.full_name || "-"}</h2>
+            {card?.position && card.position !== "-" && (
+              <p className="public-card-position">{card.position}</p>
             )}
-            <h3 style={{ marginTop: 0 }}>{card?.full_name || "-"}</h3>
-            <dl className="kv">
-              <dt>Position</dt>
-              <dd>{card?.position || "-"}</dd>
-              <dt>Department</dt>
-              <dd>{card?.department || "-"}</dd>
-              <dt>Location</dt>
-              <dd>{card?.bot_location || "-"}</dd>
-              <dt>Email</dt>
-              <dd>{data.profile.email_public || "-"}</dd>
-              <dt>Phone</dt>
-              <dd>{data.profile.phone_number || "-"}</dd>
-            </dl>
+            {card?.department && card.department !== "-" && (
+              <p className="public-card-dept">{card.department}</p>
+            )}
+
+            <div className="public-card-divider" />
+
+            <div className="contact-list">
+              {card?.bot_location && card.bot_location !== "-" && (
+                <div className="contact-item">
+                  <span className="contact-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 2C8.13401 2 5 5.13401 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13401 15.866 2 12 2ZM12 11.5C10.6193 11.5 9.5 10.3807 9.5 9C9.5 7.61929 10.6193 6.5 12 6.5C13.3807 6.5 14.5 7.61929 14.5 9C14.5 10.3807 13.3807 11.5 12 11.5Z"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <span>{card.bot_location}</span>
+                </div>
+              )}
+              {data.profile.email_public && data.profile.email_public !== "-" && (
+                <div className="contact-item">
+                  <span className="contact-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M22 6L12 13L2 6"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <a href={`mailto:${data.profile.email_public}`}>{data.profile.email_public}</a>
+                </div>
+              )}
+              {data.profile.phone_number && data.profile.phone_number !== "-" && (
+                <div className="contact-item">
+                  <span className="contact-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M22 16.92V19.92C22.0011 20.4853 21.7555 21.0238 21.3245 21.3979C20.8934 21.7719 20.3237 21.9473 19.76 21.88C16.4 21.5241 13.1759 20.3779 10.33 18.54C7.67771 16.8522 5.43366 14.6082 3.74598 11.956C1.90097 9.0979 0.754598 5.85792 0.40398 2.47998C0.336886 1.91861 0.510773 1.35207 0.881878 0.921685C1.25298 0.491296 1.78807 0.245163 2.35 0.24H5.35C6.35 0.228 7.19 0.940625 7.35 1.92998C7.52 3.00998 7.8 4.07 8.18 5.1C8.44 5.78 8.26 6.54 7.72 7.06L6.46 8.32C8.01 11.06 10.24 13.29 12.98 14.84L14.24 13.58C14.76 13.04 15.52 12.86 16.2 13.12C17.23 13.5 18.29 13.78 19.37 13.95C20.37 14.11 21.09 14.97 21.08 15.98L22 16.92Z"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <span>{data.profile.phone_number}</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="row" style={{ marginTop: 12 }}>
-            <button type="button" className="secondary" onClick={onShareJpg} disabled={exporting}>
-              Share JPG
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              disabled={exporting}
-              onClick={onSavePdf}
-            >
-              Save PDF
-            </button>
-          </div>
-          {actionMessage && <p className="ok">{actionMessage}</p>}
-        </>
-      )}
+        </div>
+
+        {/* Export actions — outside cardRef so they don't appear in JPG/PDF */}
+        <div className="export-bar">
+          <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16M16 12L12 16M12 16L8 12M12 16L12 4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {exporting ? "Working…" : "Save JPG"}
+          </button>
+          <button type="button" className="export-btn" onClick={onSavePdf} disabled={exporting}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M14 2V8H20M12 18V12M9 15H15"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {exporting ? "Working…" : "Save PDF"}
+          </button>
+          <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting}
+            title="Share this card"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 12V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V12M16 6L12 2M12 2L8 6M12 2V15"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Share
+          </button>
+        </div>
+
+        {actionMessage && (
+          <p style={{ marginTop: 10, textAlign: "center", fontSize: "0.875rem", color: "#475467" }}>
+            {actionMessage}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
