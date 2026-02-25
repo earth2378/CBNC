@@ -11,10 +11,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       await apiFetch("/auth/login", {
@@ -24,30 +26,60 @@ export default function LoginPage() {
       router.push("/me/profile");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Login failed");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div className="auth-wrap card">
-      <h2 className="auth-title">Login</h2>
-      <p className="auth-subtitle">Access your profile and manage localized card details.</p>
+      <div className="auth-brand">
+        <div className="auth-brand-chip">BOT</div>
+        <span className="auth-brand-name">BOT Name Card</span>
+      </div>
+
+      <h2 className="auth-title">Welcome back</h2>
+      <p className="auth-subtitle">Sign in to manage your digital name card.</p>
+
       <form onSubmit={onSubmit}>
         <div className="field">
-          <label>Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" />
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
         </div>
         <div className="field">
-          <label>Password</label>
-          <input value={password} onChange={(e) => setPassword(e.target.value)} required type="password" />
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            type="password"
+            placeholder="••••••••"
+            autoComplete="current-password"
+          />
         </div>
-        <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
-          <Link href="/reset-password">Forgot password?</Link>
+        <div style={{ marginBottom: 16, textAlign: "right" }}>
+          <Link href="/reset-password" style={{ fontSize: "0.875rem" }}>Forgot password?</Link>
         </div>
-        <div className="row">
-          <button type="submit">Login</button>
-        </div>
+        <button type="submit" disabled={loading} style={{ width: "100%", padding: "12px" }}>
+          {loading ? "Signing in…" : "Sign In"}
+        </button>
       </form>
-      {error && <p className="error">{error}</p>}
+
+      {error && <p className="error" style={{ marginTop: 12 }}>{error}</p>}
+
+      <p className="auth-footer">
+        New here?{" "}
+        <Link href="/register">Create an account</Link>
+      </p>
     </div>
   );
 }
