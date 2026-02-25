@@ -661,6 +661,8 @@ label {
 .public-card-avatar-wrap {
   display: flex;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .public-card-avatar {

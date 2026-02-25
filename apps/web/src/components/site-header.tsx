@@ -23,6 +23,10 @@ export default function SiteHeader() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (pathname.startsWith("/p/")) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
 
     apiFetch<MeProfileResponse>("/me/profile")
@@ -54,14 +58,11 @@ export default function SiteHeader() {
   const isPublicProfilePage = pathname.startsWith("/p/");
 
   const links = useMemo(() => {
-    if (loading) {
+    if (loading || isPublicProfilePage) {
       return [] as Array<{ href: string; label: string }>;
     }
 
     if (!authUser) {
-      if (isPublicProfilePage) {
-        return [] as Array<{ href: string; label: string }>;
-      }
       return [
         { href: "/register", label: "Register" },
         { href: "/login", label: "Login" }
@@ -74,6 +75,8 @@ export default function SiteHeader() {
     }
     return result;
   }, [authUser, isPublicProfilePage, loading]);
+
+  if (isPublicProfilePage) return null;
 
   return (
     <header className="site-header">
