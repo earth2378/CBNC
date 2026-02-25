@@ -16,11 +16,64 @@ type MeProfileResponse = {
   };
 };
 
+type Theme = "light" | "dark";
+
+function MoonIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState<Theme>("light");
+
+  // Read initial theme from DOM (set by anti-FOUC script in layout)
+  useEffect(() => {
+    const current = document.documentElement.getAttribute("data-theme") as Theme | null;
+    if (current === "dark" || current === "light") {
+      setTheme(current);
+    } else {
+      setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
+  }, []);
+
+  function toggleTheme() {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem("theme", next);
+    } catch {
+      // ignore storage errors
+    }
+  }
 
   useEffect(() => {
     if (pathname.startsWith("/p/")) {
@@ -57,6 +110,7 @@ export default function SiteHeader() {
 
   const isPublicProfilePage = pathname.startsWith("/p/");
 
+  // Keep your improved logic: skip nav entirely for public pages
   const links = useMemo(() => {
     if (loading || isPublicProfilePage) {
       return [] as Array<{ href: string; label: string }>;
@@ -76,6 +130,7 @@ export default function SiteHeader() {
     return result;
   }, [authUser, isPublicProfilePage, loading]);
 
+  // Hide header entirely on public profile pages
   if (isPublicProfilePage) return null;
 
   return (
@@ -83,8 +138,9 @@ export default function SiteHeader() {
       <div className="site-header-row">
         <Link href="/" className="brand brand-link" aria-label="Go to home">
           <div className="brand-chip">BOT</div>
-          <h1 className="brand-title">CBNC Employee Name Card</h1>
+          <h1 className="brand-title">BOT Name Card</h1>
         </Link>
+
         <nav className="nav-links">
           {links.map((item) => {
             const isActive = pathname === item.href;
@@ -94,6 +150,7 @@ export default function SiteHeader() {
               </Link>
             );
           })}
+
           {authUser && !loading && (
             <button
               type="button"
@@ -107,6 +164,17 @@ export default function SiteHeader() {
               Logout
             </button>
           )}
+
+          {/* Theme toggle */}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+          </button>
         </nav>
       </div>
     </header>

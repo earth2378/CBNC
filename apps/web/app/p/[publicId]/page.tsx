@@ -229,7 +229,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       <div className="public-page">
         <div className="public-card-wrap">
           <div className="card" style={{ textAlign: "center", padding: "40px 24px" }}>
-            <p style={{ color: "#b42318", margin: 0 }}>{error}</p>
+            <p className="error" style={{ margin: 0 }}>{error}</p>
           </div>
         </div>
       </div>
@@ -241,7 +241,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       <div className="public-page">
         <div className="public-card-wrap">
           <div className="card" style={{ textAlign: "center", padding: "40px 24px" }}>
-            <p style={{ color: "#64748b", margin: 0 }}>Loading…</p>
+            <p className="muted" style={{ margin: 0 }}>Loading…</p>
           </div>
         </div>
       </div>
@@ -408,7 +408,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
         </div>
 
         {actionMessage && (
-          <p style={{ marginTop: 10, textAlign: "center", fontSize: "0.875rem", color: "#475467" }}>
+          <p className="muted" style={{ marginTop: 10, textAlign: "center", fontSize: "0.875rem" }}>
             {actionMessage}
           </p>
         )}
