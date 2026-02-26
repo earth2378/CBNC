@@ -50,6 +50,7 @@ export default function MyProfilePage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [copied, setCopied] = useState(false);
   const [savePopup, setSavePopup] = useState<{ open: boolean; ok: boolean; message: string }>({
     open: false,
@@ -71,19 +72,20 @@ export default function MyProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (!savePopup.open) {
-      return;
-    }
+    if (!savePopup.open && !showRemoveConfirm) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" || event.key === "Enter") {
+      if (event.key === "Escape") {
+        if (showRemoveConfirm) setShowRemoveConfirm(false);
+        else setSavePopup((prev) => ({ ...prev, open: false }));
+      } else if (event.key === "Enter" && savePopup.open) {
         setSavePopup((prev) => ({ ...prev, open: false }));
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [savePopup.open]);
+  }, [savePopup.open, showRemoveConfirm]);
 
   useEffect(() => {
     if (!copied) {
@@ -237,11 +239,9 @@ export default function MyProfilePage() {
     }
   }
 
-  async function onPhotoRemove() {
-    if (!data) {
-      return;
-    }
-
+  async function executePhotoRemove() {
+    if (!data) return;
+    setShowRemoveConfirm(false);
     setUploadingPhoto(true);
     try {
       await apiFetch<{ photo_url: string | null }>("/me/photo", {
@@ -389,26 +389,14 @@ export default function MyProfilePage() {
                   onChange={onPhotoUpload}
                   disabled={uploadingPhoto}
                 />
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    background: "#334155",
-                    color: "#fff",
-                    fontWeight: 600,
-                    cursor: uploadingPhoto ? "not-allowed" : "pointer",
-                    opacity: uploadingPhoto ? 0.65 : 1
-                  }}
-                >
+                <span className={`btn-photo-upload${uploadingPhoto ? " disabled" : ""}`}>
                   {uploadingPhoto ? "Working..." : "Upload"}
                 </span>
               </label>
               <button
                 type="button"
-                className="secondary"
-                onClick={onPhotoRemove}
+                className="btn-photo-danger"
+                onClick={() => setShowRemoveConfirm(true)}
                 disabled={uploadingPhoto || !data.profile.photo_url}
               >
                 Remove
@@ -679,6 +667,44 @@ export default function MyProfilePage() {
         })}
         </div>
       </div>
+
+      {showRemoveConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.4)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 1000,
+            padding: 16
+          }}
+          onClick={() => setShowRemoveConfirm(false)}
+        >
+          <div className="card" style={{ maxWidth: 380, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0 }}>Remove Photo</h3>
+            <p style={{ marginTop: 0, color: "var(--muted)" }}>
+              Are you sure you want to remove your profile photo? This cannot be undone.
+            </p>
+            <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setShowRemoveConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={executePhotoRemove}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {savePopup.open && (
         <div

@@ -534,16 +534,16 @@ button:disabled {
 }
 
 button.secondary {
-  background: linear-gradient(135deg, var(--ink-soft), #1f2937);
-  color: #fff;
-}
-
-[data-theme="dark"] button.secondary {
-  background: linear-gradient(135deg, var(--ink-soft), #1E3A6A);
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1.5px solid var(--line);
 }
 
 button.secondary:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: var(--brand-tint);
+  border-color: var(--brand-tint-border);
+  color: var(--brand);
+  box-shadow: var(--shadow-sm);
 }
 
 button.danger {
@@ -552,6 +552,57 @@ button.danger {
 
 button.danger:hover {
   box-shadow: 0 4px 12px rgba(192, 57, 43, 0.35);
+}
+
+.btn-photo-upload {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--brand), var(--brand-mid));
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+}
+
+.btn-photo-upload:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 47, 108, 0.35);
+  filter: brightness(1.06);
+}
+
+.btn-photo-upload.disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+button.btn-photo-danger {
+  background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+}
+
+button.btn-photo-danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.35);
+  filter: brightness(1.06);
+}
+
+button.btn-photo-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }
 
 label {
