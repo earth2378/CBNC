@@ -65,6 +65,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   const [actionMessage, setActionMessage] = useState("");
   const [exporting, setExporting] = useState(false);
   const [theme, setTheme] = useState<Theme>("light");
+  const [showQr, setShowQr] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -75,6 +76,13 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     }
   }, []);
+
+  useEffect(() => {
+    if (!showQr) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") setShowQr(false); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showQr]);
 
   function toggleTheme() {
     const next: Theme = theme === "dark" ? "light" : "dark";
@@ -331,6 +339,10 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   }
 
   const initials = card?.full_name ? getInitials(card.full_name) : "?";
+  const configuredOrigin = process.env.NEXT_PUBLIC_APP_ORIGIN?.replace(/\/$/, "");
+  const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const publicUrl = `${configuredOrigin || runtimeOrigin}/p/${params.publicId}`;
+  const qrUrl = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(publicUrl)}`;
 
   return (
     <div className="public-page">
@@ -453,6 +465,15 @@ export default function PublicPage({ params }: { params: { publicId: string } })
 
         {/* Export actions — outside cardRef so they don't appear in JPG/PDF */}
         <div className="export-bar">
+          <button type="button" className="export-btn" onClick={() => setShowQr(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8" />
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8" />
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M14 14h2v2h-2zM18 14h3v2h-3zM14 18h2v3h-2zM18 18h3v3h-3z" fill="currentColor" />
+            </svg>
+            QR Code
+          </button>
           <button type="button" className="export-btn" onClick={onSaveVCard}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -492,6 +513,20 @@ export default function PublicPage({ params }: { params: { publicId: string } })
             </svg>
             {exporting ? "Working…" : "Save PDF"}
           </button>
+          <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting}
+            title="Share this card"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 12V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V12M16 6L12 2M12 2L8 6M12 2V15"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Share
+          </button>
         </div>
 
         {actionMessage && (
@@ -500,6 +535,62 @@ export default function PublicPage({ params }: { params: { publicId: string } })
           </p>
         )}
       </div>
+
+      {/* QR modal */}
+      {showQr && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.5)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 1000,
+            padding: 16
+          }}
+          onClick={() => setShowQr(false)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: 300, width: "100%", textAlign: "center" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 16 }}>QR Code</h3>
+            <img
+              src={qrUrl}
+              alt="Public profile QR code"
+              width={220}
+              height={220}
+              style={{ borderRadius: 10, border: "1px solid var(--line)", background: "#fff" }}
+            />
+            <p className="muted" style={{ fontSize: "0.8rem", margin: "10px 0 16px" }}>
+              Scan to open this name card
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <a
+                href={`${qrUrl}&format=png`}
+                download={`cbnc-qr-${params.publicId}.png`}
+                className="export-btn"
+                style={{ textDecoration: "none" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 3V15M12 15L7 10M12 15L17 10M4 17V19C4 19.5304 4.21071 20.0391 4.58579 20.4142C4.96086 20.7893 5.46957 21 6 21H18C18.5304 21 19.0391 20.7893 19.4142 20.4142C19.7893 20.0391 20 19.5304 20 19V17"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Save PNG
+              </a>
+              <button type="button" className="export-btn" onClick={() => setShowQr(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1052,12 +1052,13 @@ label {
 .export-bar {
   margin-top: 16px;
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   width: 100%;
 }
 
 .export-btn {
-  flex: 1;
+  flex: 1 1 calc(33.333% - 7px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
