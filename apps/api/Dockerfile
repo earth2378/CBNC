@@ -16,6 +16,9 @@ WORKDIR /app/apps/api
 
 RUN npm run build
 
+COPY apps/api/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 EXPOSE 3001
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "entrypoint.sh"]
