@@ -13,6 +13,25 @@ import {
   varchar
 } from "drizzle-orm/pg-core";
 
+export const locations = pgTable(
+  "locations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    code: varchar("code", { length: 50 }).notNull(),
+    nameTh: varchar("name_th", { length: 200 }).notNull(),
+    nameEn: varchar("name_en", { length: 200 }).notNull(),
+    nameZh: varchar("name_zh", { length: 200 }).notNull(),
+    addressTh: varchar("address_th", { length: 500 }),
+    addressEn: varchar("address_en", { length: 500 }),
+    addressZh: varchar("address_zh", { length: 500 }),
+    isActive: boolean("is_active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0)
+  },
+  (t) => ({
+    locationsCodeUnique: unique("locations_code_unique").on(t.code)
+  })
+);
+
 export const userRoleEnum = pgEnum("user_role", ["employee", "admin"]);
 export const profileLangEnum = pgEnum("profile_lang", ["th", "en", "zh"]);
 
@@ -48,6 +67,7 @@ export const profiles = pgTable(
     prefEnableTh: boolean("pref_enable_th").notNull().default(true),
     prefEnableEn: boolean("pref_enable_en").notNull().default(true),
     prefEnableZh: boolean("pref_enable_zh").notNull().default(true),
+    locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
   },
@@ -67,7 +87,6 @@ export const profileLocalizations = pgTable(
     fullName: varchar("full_name", { length: 200 }).notNull().default("-"),
     position: varchar("position", { length: 200 }).notNull().default("-"),
     department: varchar("department", { length: 200 }).notNull().default("-"),
-    botLocation: varchar("bot_location", { length: 200 }).notNull().default("-"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
   },
