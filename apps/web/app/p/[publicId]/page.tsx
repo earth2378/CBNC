@@ -229,6 +229,36 @@ export default function PublicPage({ params }: { params: { publicId: string } })
     }
   }
 
+  function onSaveVCard() {
+    if (!card) return;
+    const esc = (v: string) => v.replace(/[\\,;]/g, (c) => `\\${c}`);
+    const lines = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `FN:${esc(card.full_name || "")}`,
+      `N:${esc(card.full_name || "")};;;;`,
+    ];
+    if (card.position && card.position !== "-") lines.push(`TITLE:${esc(card.position)}`);
+    if (card.department && card.department !== "-") lines.push(`ORG:${esc(card.department)}`);
+    if (data?.profile.email_public && data.profile.email_public !== "-")
+      lines.push(`EMAIL;TYPE=WORK:${esc(data.profile.email_public)}`);
+    if (data?.profile.phone_number && data.profile.phone_number !== "-")
+      lines.push(`TEL;TYPE=WORK,VOICE:${esc(data.profile.phone_number)}`);
+    if (card.bot_location && card.bot_location !== "-")
+      lines.push(`NOTE:${esc(card.bot_location)}`);
+    lines.push("END:VCARD");
+
+    const blob = new Blob([lines.join("\r\n")], { type: "text/vcard;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cbnc-${params.publicId}-${lang}.vcf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async function onSavePdf() {
     if (!cardRef.current) return;
     setExporting(true);
@@ -423,6 +453,14 @@ export default function PublicPage({ params }: { params: { publicId: string } })
 
         {/* Export actions — outside cardRef so they don't appear in JPG/PDF */}
         <div className="export-bar">
+          <button type="button" className="export-btn" onClick={onSaveVCard}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 10C8 8.89543 8.89543 8 10 8H14C15.1046 8 16 8.89543 16 10C16 11.1046 15.1046 12 14 12H10C8.89543 12 8 11.1046 8 10Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M6 16C6.5 14.5 7.5 14 10 14H14C16.5 14 17.5 14.5 18 16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Save Contact
+          </button>
           <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -453,20 +491,6 @@ export default function PublicPage({ params }: { params: { publicId: string } })
               />
             </svg>
             {exporting ? "Working…" : "Save PDF"}
-          </button>
-          <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting}
-            title="Share this card"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M4 12V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V12M16 6L12 2M12 2L8 6M12 2V15"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Share
           </button>
         </div>
 
