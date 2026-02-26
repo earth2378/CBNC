@@ -4,6 +4,37 @@ import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "../../../src/lib/api";
 
+type Theme = "light" | "dark";
+
+function MoonIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 type PublicProfileResponse = {
   profile: {
     public_id: string;
@@ -33,7 +64,28 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [theme, setTheme] = useState<Theme>("light");
   const cardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const current = document.documentElement.getAttribute("data-theme") as Theme | null;
+    if (current === "dark" || current === "light") {
+      setTheme(current);
+    } else {
+      setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
+  }, []);
+
+  function toggleTheme() {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem("theme", next);
+    } catch {
+      // ignore storage errors
+    }
+  }
 
   useEffect(() => {
     apiFetch<PublicProfileResponse>(`/public/profiles/${params.publicId}`)
@@ -253,22 +305,33 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   return (
     <div className="public-page">
       <div className="public-card-wrap">
-        {/* Language tabs — above the card */}
-        {data.enabled_langs.length > 1 && (
-          <div className="lang-tabs" style={{ marginBottom: 12 }}>
-            {data.enabled_langs.map((code) => (
-              <button
-                key={code}
-                type="button"
-                className={`lang-tab${lang === code ? " active" : ""}`}
-                onClick={() => setLang(code)}
-                aria-pressed={lang === code}
-              >
-                {code.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Controls row: all display preferences right-aligned */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, marginBottom: 12 }}>
+          {data.enabled_langs.length > 1 && (
+            <div className="lang-tabs" style={{ margin: 0 }}>
+              {data.enabled_langs.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`lang-tab${lang === code ? " active" : ""}`}
+                  onClick={() => setLang(code)}
+                  aria-pressed={lang === code}
+                >
+                  {code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+          </button>
+        </div>
 
         {/* Card — captured for export */}
         <div className="public-card" ref={cardRef}>
