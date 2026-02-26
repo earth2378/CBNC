@@ -4,6 +4,18 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import { apiFetch } from "../../../src/lib/api";
 
+type LocationOption = {
+  id: string;
+  code: string;
+  name_th: string;
+  name_en: string;
+  name_zh: string;
+  address_th: string | null;
+  address_en: string | null;
+  address_zh: string | null;
+  sort_order: number;
+};
+
 type ProfileResponse = {
   user: { id: string; email: string; role: "employee" | "admin"; is_active: boolean };
   profile: {
@@ -14,18 +26,18 @@ type ProfileResponse = {
     pref_enable_th: boolean;
     pref_enable_en: boolean;
     pref_enable_zh: boolean;
+    location: LocationOption | null;
   };
   enabled_langs: Array<"th" | "en" | "zh">;
   localizations: Partial<
-    Record<"th" | "en" | "zh", { full_name: string; position: string; department: string; bot_location: string }>
+    Record<"th" | "en" | "zh", { full_name: string; position: string; department: string }>
   >;
 };
 
 const fallbackLocalization = {
   full_name: "-",
   position: "-",
-  department: "-",
-  bot_location: "-"
+  department: "-"
 };
 
 const languages = ["th", "en", "zh"] as const;
@@ -33,6 +45,8 @@ type LanguageCode = (typeof languages)[number];
 
 export default function MyProfilePage() {
   const [data, setData] = useState<ProfileResponse | null>(null);
+  const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -45,8 +59,15 @@ export default function MyProfilePage() {
 
   useEffect(() => {
     apiFetch<ProfileResponse>("/me/profile")
-      .then(setData)
+      .then((res) => {
+        setData(res);
+        setSelectedLocationId(res.profile.location?.id ?? "");
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
+
+    apiFetch<LocationOption[]>("/public/locations")
+      .then(setLocationOptions)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -100,6 +121,7 @@ export default function MyProfilePage() {
         pref_enable_th: data.profile.pref_enable_th,
         pref_enable_en: data.profile.pref_enable_en,
         pref_enable_zh: data.profile.pref_enable_zh,
+        location_id: selectedLocationId || null,
         localizations: {
           th: data.localizations.th,
           en: data.localizations.en,
@@ -113,6 +135,7 @@ export default function MyProfilePage() {
       });
 
       setData(updated);
+      setSelectedLocationId(updated.profile.location?.id ?? "");
       setSavePopup({
         open: true,
         ok: true,
@@ -256,6 +279,15 @@ export default function MyProfilePage() {
   const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const publicUrl = `${configuredOrigin || runtimeOrigin}${publicPath}`;
   const qrUrl = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(publicUrl)}`;
+
+  const selectedLocation = locationOptions.find((l) => l.id === selectedLocationId) ?? null;
+
+  function getLocationName(loc: LocationOption | null, lang: LanguageCode): string {
+    if (!loc) return "-";
+    if (lang === "th") return loc.name_th;
+    if (lang === "en") return loc.name_en;
+    return loc.name_zh;
+  }
 
   function isLanguageEnabled(lang: LanguageCode) {
     if (lang === "th") return profile.pref_enable_th;
@@ -402,6 +434,20 @@ export default function MyProfilePage() {
               required
             />
           </div>
+          <div className="field">
+            <label>BOT Location</label>
+            <select
+              value={selectedLocationId}
+              onChange={(e) => setSelectedLocationId(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {locationOptions.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name_en} / {loc.name_th}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {languages.map((lang) => {
             const localized = data.localizations[lang] || fallbackLocalization;
@@ -457,7 +503,7 @@ export default function MyProfilePage() {
                         }
                       />
                     </div>
-                    <div className="field">
+                    <div className="field" style={{ marginBottom: 0 }}>
                       <label>Department</label>
                       <input
                         value={localized.department}
@@ -467,21 +513,6 @@ export default function MyProfilePage() {
                             localizations: {
                               ...data.localizations,
                               [lang]: { ...localized, department: e.target.value }
-                            }
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="field" style={{ marginBottom: 0 }}>
-                      <label>BOT Location</label>
-                      <input
-                        value={localized.bot_location}
-                        onChange={(e) =>
-                          setData({
-                            ...data,
-                            localizations: {
-                              ...data.localizations,
-                              [lang]: { ...localized, bot_location: e.target.value }
                             }
                           })
                         }
@@ -637,7 +668,7 @@ export default function MyProfilePage() {
                 <dt>Department</dt>
                 <dd>{v.department}</dd>
                 <dt>Location</dt>
-                <dd>{v.bot_location}</dd>
+                <dd>{getLocationName(selectedLocation, lang)}</dd>
                 <dt>Email</dt>
                 <dd>{data.profile.email_public}</dd>
                 <dt>Phone</dt>

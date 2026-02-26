@@ -35,16 +35,28 @@ function SunIcon() {
   );
 }
 
+type LocationData = {
+  id: string;
+  code: string;
+  name_th: string;
+  name_en: string;
+  name_zh: string;
+  address_th: string | null;
+  address_en: string | null;
+  address_zh: string | null;
+} | null;
+
 type PublicProfileResponse = {
   profile: {
     public_id: string;
     photo_url: string | null;
     email_public: string;
     phone_number: string;
+    location: LocationData;
   };
   enabled_langs: Array<"th" | "en" | "zh">;
   localizations: Partial<
-    Record<"th" | "en" | "zh", { full_name: string; position: string; department: string; bot_location: string }>
+    Record<"th" | "en" | "zh", { full_name: string; position: string; department: string }>
   >;
 };
 
@@ -252,8 +264,13 @@ export default function PublicPage({ params }: { params: { publicId: string } })
       lines.push(`EMAIL;TYPE=WORK:${esc(data.profile.email_public)}`);
     if (data?.profile.phone_number && data.profile.phone_number !== "-")
       lines.push(`TEL;TYPE=WORK,VOICE:${esc(data.profile.phone_number)}`);
-    if (card.bot_location && card.bot_location !== "-")
-      lines.push(`NOTE:${esc(card.bot_location)}`);
+    const loc = data?.profile.location;
+    const locationName = lang === "th" ? loc?.name_th : lang === "zh" ? loc?.name_zh : loc?.name_en;
+    const locationAddress = lang === "th" ? loc?.address_th : lang === "zh" ? loc?.address_zh : loc?.address_en;
+    if (locationName && locationName !== "-")
+      lines.push(`NOTE:${esc(locationName)}${locationAddress ? ` — ${esc(locationAddress)}` : ""}`);
+    if (locationAddress)
+      lines.push(`ADR;TYPE=WORK:;;${esc(locationAddress)};;;;`);
     lines.push("END:VCARD");
 
     const blob = new Blob([lines.join("\r\n")], { type: "text/vcard;charset=utf-8" });
@@ -404,22 +421,32 @@ export default function PublicPage({ params }: { params: { publicId: string } })
             <div className="public-card-divider" />
 
             <div className="contact-list">
-              {card?.bot_location && card.bot_location !== "-" && (
-                <div className="contact-item">
-                  <span className="contact-icon" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 2C8.13401 2 5 5.13401 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13401 15.866 2 12 2ZM12 11.5C10.6193 11.5 9.5 10.3807 9.5 9C9.5 7.61929 10.6193 6.5 12 6.5C13.3807 6.5 14.5 7.61929 14.5 9C14.5 10.3807 13.3807 11.5 12 11.5Z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  <span>{card.bot_location}</span>
-                </div>
-              )}
+              {(() => {
+                const loc = data.profile.location;
+                if (!loc) return null;
+                const name = lang === "th" ? loc.name_th : lang === "zh" ? loc.name_zh : loc.name_en;
+                const address = lang === "th" ? loc.address_th : lang === "zh" ? loc.address_zh : loc.address_en;
+                if (!name || name === "-") return null;
+                return (
+                  <div className="contact-item" style={{ alignItems: "flex-start" }}>
+                    <span className="contact-icon" aria-hidden="true" style={{ marginTop: 2 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M12 2C8.13401 2 5 5.13401 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13401 15.866 2 12 2ZM12 11.5C10.6193 11.5 9.5 10.3807 9.5 9C9.5 7.61929 10.6193 6.5 12 6.5C13.3807 6.5 14.5 7.61929 14.5 9C14.5 10.3807 13.3807 11.5 12 11.5Z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                    <span>
+                      <span style={{ display: "block" }}>{name}</span>
+                      {address && <span style={{ display: "block", fontSize: "0.8rem", opacity: 0.65, marginTop: 2 }}>{address}</span>}
+                    </span>
+                  </div>
+                );
+              })()}
               {data.profile.email_public && data.profile.email_public !== "-" && (
                 <div className="contact-item">
                   <span className="contact-icon" aria-hidden="true">
