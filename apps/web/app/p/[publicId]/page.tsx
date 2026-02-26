@@ -395,7 +395,9 @@ export default function PublicPage({ params }: { params: { publicId: string } })
         {/* Card — captured for export */}
         <div className="public-card" ref={cardRef}>
           {/* Gradient header banner */}
-          <div className="public-card-header" />
+          <div className="public-card-header">
+            <img src="/logo-top-white.png" alt="Bank of Thailand" className="public-card-header-logo" />
+          </div>
 
           {/* Avatar overlapping the header */}
           <div className="public-card-avatar-wrap">

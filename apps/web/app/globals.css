@@ -886,6 +886,14 @@ label {
   max-width: 440px;
 }
 
+.public-card-header-logo {
+  max-height: 72px;
+  max-width: calc(100% - 48px);
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
 .public-card {
   background: var(--surface);
   border-radius: 20px;
@@ -898,6 +906,10 @@ label {
   height: 120px;
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 16px;
 }
 
 .public-card-avatar-wrap {
