@@ -269,8 +269,8 @@ export default function PublicPage({ params }: { params: { publicId: string } })
     const locationAddress = lang === "th" ? loc?.address_th : lang === "zh" ? loc?.address_zh : loc?.address_en;
     if (locationName && locationName !== "-")
       lines.push(`NOTE:${esc(locationName)}${locationAddress ? ` — ${esc(locationAddress)}` : ""}`);
-    if (locationAddress)
-      lines.push(`ADR;TYPE=WORK:;;${esc(locationAddress)};;;;`);
+    if (loc?.name_th && loc.name_th !== "-")
+      lines.push(`ADR;TYPE=WORK:;;${esc(loc.address_th ?? loc.name_th)};;;;`);
     lines.push("END:VCARD");
 
     const blob = new Blob([lines.join("\r\n")], { type: "text/vcard;charset=utf-8" });
