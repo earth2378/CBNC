@@ -46,9 +46,9 @@
 /* ── Dark mode (OS preference) ─────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --brand:              #5BC4FF;
-    --brand-mid:          #2A9EE8;
-    --brand-2:            #38B2FF;
+    --brand:              #1453A5;
+    --brand-mid:          #1A72C7;
+    --brand-2:            #1E8AE0;
     --brand-tint:         #1A2535;
     --brand-tint-border:  #2D3F55;
 
@@ -77,9 +77,9 @@
 
 /* ── Dark mode (manual toggle) ──────────────────────────── */
 [data-theme="dark"] {
-  --brand:              #5BC4FF;
-  --brand-mid:          #2A9EE8;
-  --brand-2:            #38B2FF;
+  --brand:              #1453A5;
+  --brand-mid:          #1A72C7;
+  --brand-2:            #1E8AE0;
   --brand-tint:         #1A2535;
   --brand-tint-border:  #2D3F55;
 
@@ -303,6 +303,18 @@ a:hover {
   box-shadow: var(--shadow-sm);
   transform: none;
   filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nav-btn {
+    color: var(--ink);
+    border-color: #3A3C45;
+  }
+}
+
+[data-theme="dark"] .nav-btn {
+  color: var(--ink);
+  border-color: #3A3C45;
 }
 
 /* Theme toggle */
@@ -533,13 +545,20 @@ button:disabled {
   box-shadow: none;
 }
 
-button.secondary {
+button.secondary,
+a.secondary {
   background: var(--surface-2);
   color: var(--ink);
   border: 1.5px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
 }
 
-button.secondary:hover {
+button.secondary:hover,
+a.secondary:hover {
   background: var(--brand-tint);
   border-color: var(--brand-tint-border);
   color: var(--brand);
@@ -809,19 +828,18 @@ label {
   filter: brightness(1.06);
 }
 
-[data-theme="dark"] .hero-cta .btn-primary,
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .hero-cta .btn-primary {
-    box-shadow: 0 4px 14px rgba(91, 196, 255, 0.25);
+    box-shadow: 0 4px 14px rgba(0, 47, 108, 0.35);
   }
 }
 
 [data-theme="dark"] .hero-cta .btn-primary {
-  box-shadow: 0 4px 14px rgba(91, 196, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 47, 108, 0.35);
 }
 
 [data-theme="dark"] .hero-cta .btn-primary:hover {
-  box-shadow: 0 8px 20px rgba(91, 196, 255, 0.35);
+  box-shadow: 0 8px 20px rgba(0, 47, 108, 0.45);
 }
 
 .hero-cta .btn-outline {
@@ -1112,7 +1130,7 @@ label {
 }
 
 [data-theme="dark"] .lang-tab.active {
-  box-shadow: 0 2px 8px rgba(91, 196, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 47, 108, 0.35);
 }
 
 .lang-tab.active:hover {
@@ -1159,7 +1177,6 @@ label {
   box-shadow: none;
 }
 
-[data-theme="dark"] .export-btn,
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .export-btn {
     color: var(--ink);

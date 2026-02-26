@@ -586,19 +586,15 @@ export default function MyProfilePage() {
               href={publicUrl}
               target="_blank"
               rel="noreferrer"
+              className="secondary"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "8px 10px",
-                borderRadius: 10,
-                border: "1px solid #cbd5e1",
-                background: "#ffffff",
-                color: "#334155",
-                textDecoration: "none",
-                fontWeight: 600,
                 whiteSpace: "nowrap",
-                fontSize: "0.84rem"
+                fontSize: "0.84rem",
+                padding: "8px 10px",
+                textDecoration: "none"
               }}
             >
               <span aria-hidden="true" style={{ display: "inline-flex" }}>
