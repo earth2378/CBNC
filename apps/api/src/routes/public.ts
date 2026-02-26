@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { notImplemented } from "../lib/http.js";
 import { isAppError } from "../lib/errors.js";
+import { findAllActiveLocations } from "../repositories/locations.repository.js";
 import * as publicService from "../services/public.service.js";
 
 const paramsSchema = z.object({
@@ -14,6 +15,23 @@ const querySchema = z.object({
 });
 
 const publicRoutes: FastifyPluginAsync = async (app) => {
+  app.get("/public/locations", async (_request, reply) => {
+    const rows = await findAllActiveLocations(app.db);
+    return reply.code(200).send(
+      rows.map((r) => ({
+        id: r.id,
+        code: r.code,
+        name_th: r.nameTh,
+        name_en: r.nameEn,
+        name_zh: r.nameZh,
+        address_th: r.addressTh ?? null,
+        address_en: r.addressEn ?? null,
+        address_zh: r.addressZh ?? null,
+        sort_order: r.sortOrder
+      }))
+    );
+  });
+
   app.get("/public/profiles/:public_id", async (request, reply) => {
     const paramsParsed = paramsSchema.safeParse(request.params);
     const queryParsed = querySchema.safeParse(request.query);

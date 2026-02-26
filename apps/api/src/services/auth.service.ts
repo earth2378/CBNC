@@ -15,7 +15,6 @@ type Localization = {
   full_name: string;
   position: string;
   department: string;
-  bot_location: string;
 };
 
 function getEnabledLangs(
@@ -34,8 +33,7 @@ function toLocalizationMap(rows: Array<typeof schema.profileLocalizations.$infer
   const defaultValue: Localization = {
     full_name: "-",
     position: "-",
-    department: "-",
-    bot_location: "-"
+    department: "-"
   };
 
   const mapped: Record<"th" | "en" | "zh", Localization> = {
@@ -48,8 +46,7 @@ function toLocalizationMap(rows: Array<typeof schema.profileLocalizations.$infer
     mapped[row.lang] = {
       full_name: row.fullName,
       position: row.position,
-      department: row.department,
-      bot_location: row.botLocation
+      department: row.department
     };
   }
 

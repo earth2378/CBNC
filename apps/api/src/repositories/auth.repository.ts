@@ -41,9 +41,9 @@ export async function createRegisteredUser(db: Db, params: { email: string; pass
       const localizations = await tx
         .insert(schema.profileLocalizations)
         .values([
-          { userId: user.id, lang: "th", fullName: "-", position: "-", department: "-", botLocation: "-" },
-          { userId: user.id, lang: "en", fullName: "-", position: "-", department: "-", botLocation: "-" },
-          { userId: user.id, lang: "zh", fullName: "-", position: "-", department: "-", botLocation: "-" }
+          { userId: user.id, lang: "th", fullName: "-", position: "-", department: "-" },
+          { userId: user.id, lang: "en", fullName: "-", position: "-", department: "-" },
+          { userId: user.id, lang: "zh", fullName: "-", position: "-", department: "-" }
         ])
         .returning();
 

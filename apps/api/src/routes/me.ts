@@ -12,8 +12,7 @@ const getMyProfileQuerySchema = z.object({
 const profileLocalizationSchema = z.object({
   full_name: z.string().max(200),
   position: z.string().max(200),
-  department: z.string().max(200),
-  bot_location: z.string().max(200)
+  department: z.string().max(200)
 });
 
 const updateMyProfileBodySchema = z.object({
@@ -22,6 +21,7 @@ const updateMyProfileBodySchema = z.object({
   pref_enable_th: z.boolean(),
   pref_enable_en: z.boolean(),
   pref_enable_zh: z.boolean(),
+  location_id: z.string().uuid().nullable().optional(),
   localizations: z
     .object({
       th: profileLocalizationSchema.optional(),
@@ -106,7 +106,6 @@ const meRoutes: FastifyPluginAsync = async (app) => {
             full_name: string;
             position: string;
             department: string;
-            bot_location: string;
           }
         >
       >;
@@ -118,6 +117,7 @@ const meRoutes: FastifyPluginAsync = async (app) => {
         prefEnableTh: parsedBody.data.pref_enable_th,
         prefEnableEn: parsedBody.data.pref_enable_en,
         prefEnableZh: parsedBody.data.pref_enable_zh,
+        locationId: parsedBody.data.location_id ?? null,
         localizations
       });
       return reply.code(200).send(payload);

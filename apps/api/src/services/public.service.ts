@@ -3,6 +3,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../db/schema.js";
 import { AppError } from "../lib/errors.js";
 import type { StorageProvider } from "../lib/storage/provider.js";
+import { findLocationById } from "../repositories/locations.repository.js";
 import {
   findProfileByPublicId,
   findProfileLocalizationByUserIdAndLang,
@@ -17,7 +18,6 @@ type Localization = {
   full_name: string;
   position: string;
   department: string;
-  bot_location: string;
 };
 
 function getEnabledLangs(
@@ -37,16 +37,14 @@ function mapLocalizationRow(row: typeof schema.profileLocalizations.$inferSelect
     return {
       full_name: "-",
       position: "-",
-      department: "-",
-      bot_location: "-"
+      department: "-"
     };
   }
 
   return {
     full_name: row.fullName,
     position: row.position,
-    department: row.department,
-    bot_location: row.botLocation
+    department: row.department
   };
 }
 
@@ -72,7 +70,11 @@ export async function getPublicProfile(db: Db, input: { storage: StorageProvider
     throw new AppError(404, "NOT_FOUND", "public profile not found");
   }
 
-  const settings = await findSystemSettings(db);
+  const [settings, locationRow] = await Promise.all([
+    findSystemSettings(db),
+    profile.locationId ? findLocationById(db, profile.locationId) : Promise.resolve(null)
+  ]);
+
   const enabledLangs = getEnabledLangs(profile, settings);
   if (input.lang && !enabledLangs.includes(input.lang)) {
     throw new AppError(404, "NOT_FOUND", "language not available");
@@ -88,12 +90,26 @@ export async function getPublicProfile(db: Db, input: { storage: StorageProvider
     localizations = await findProfileLocalizationsByUserId(db, profile.userId);
   }
 
+  const location = locationRow
+    ? {
+        id: locationRow.id,
+        code: locationRow.code,
+        name_th: locationRow.nameTh,
+        name_en: locationRow.nameEn,
+        name_zh: locationRow.nameZh,
+        address_th: locationRow.addressTh ?? null,
+        address_en: locationRow.addressEn ?? null,
+        address_zh: locationRow.addressZh ?? null
+      }
+    : null;
+
   return {
     profile: {
       public_id: profile.publicId,
       photo_url: profile.photoObjectKey ? input.storage.resolvePublicUrl(profile.photoObjectKey) : null,
       email_public: profile.emailPublic,
-      phone_number: profile.phoneNumber
+      phone_number: profile.phoneNumber,
+      location
     },
     enabled_langs: enabledLangs,
     localizations: input.lang

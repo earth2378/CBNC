@@ -37,6 +37,7 @@ export async function updateProfileNonLocalized(
     prefEnableTh: boolean;
     prefEnableEn: boolean;
     prefEnableZh: boolean;
+    locationId: string | null;
   }
 ) {
   const updated = await db
@@ -46,7 +47,8 @@ export async function updateProfileNonLocalized(
       phoneNumber: input.phoneNumber,
       prefEnableTh: input.prefEnableTh,
       prefEnableEn: input.prefEnableEn,
-      prefEnableZh: input.prefEnableZh
+      prefEnableZh: input.prefEnableZh,
+      locationId: input.locationId
     })
     .where(eq(schema.profiles.userId, input.userId))
     .returning();
@@ -74,7 +76,6 @@ export async function upsertProfileLocalization(
     fullName: string;
     position: string;
     department: string;
-    botLocation: string;
   }
 ) {
   const updated = await db
@@ -84,16 +85,14 @@ export async function upsertProfileLocalization(
       lang: input.lang,
       fullName: input.fullName,
       position: input.position,
-      department: input.department,
-      botLocation: input.botLocation
+      department: input.department
     })
     .onConflictDoUpdate({
       target: [schema.profileLocalizations.userId, schema.profileLocalizations.lang],
       set: {
         fullName: input.fullName,
         position: input.position,
-        department: input.department,
-        botLocation: input.botLocation
+        department: input.department
       }
     })
     .returning();

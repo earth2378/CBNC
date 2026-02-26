@@ -3,6 +3,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../db/schema.js";
 import { AppError } from "../lib/errors.js";
 import type { StorageProvider } from "../lib/storage/provider.js";
+import { findLocationById } from "../repositories/locations.repository.js";
 import {
   findProfileByUserId,
   findProfileLocalizationsByUserId,
@@ -20,8 +21,18 @@ type Localization = {
   full_name: string;
   position: string;
   department: string;
-  bot_location: string;
 };
+
+type LocationData = {
+  id: string;
+  code: string;
+  name_th: string;
+  name_en: string;
+  name_zh: string;
+  address_th: string | null;
+  address_en: string | null;
+  address_zh: string | null;
+} | null;
 
 type ProfileResponse = {
   user: {
@@ -38,6 +49,7 @@ type ProfileResponse = {
     pref_enable_th: boolean;
     pref_enable_en: boolean;
     pref_enable_zh: boolean;
+    location: LocationData;
   };
   enabled_langs: LanguageCode[];
   localizations: Partial<Record<LanguageCode, Localization>>;
@@ -77,8 +89,7 @@ function mapLocalizationRow(row: typeof schema.profileLocalizations.$inferSelect
   return {
     full_name: row.fullName,
     position: row.position,
-    department: row.department,
-    bot_location: row.botLocation
+    department: row.department
   };
 }
 
@@ -109,6 +120,20 @@ async function buildProfileResponse(db: Db, storage: StorageProvider, userId: st
     throw new AppError(404, "NOT_FOUND", "profile not found");
   }
 
+  const locationRow = profile.locationId ? await findLocationById(db, profile.locationId) : null;
+  const location: LocationData = locationRow
+    ? {
+        id: locationRow.id,
+        code: locationRow.code,
+        name_th: locationRow.nameTh,
+        name_en: locationRow.nameEn,
+        name_zh: locationRow.nameZh,
+        address_th: locationRow.addressTh ?? null,
+        address_en: locationRow.addressEn ?? null,
+        address_zh: locationRow.addressZh ?? null
+      }
+    : null;
+
   const langsFilter = parseLangsFilter(langs);
 
   return {
@@ -125,7 +150,8 @@ async function buildProfileResponse(db: Db, storage: StorageProvider, userId: st
       phone_number: profile.phoneNumber,
       pref_enable_th: profile.prefEnableTh,
       pref_enable_en: profile.prefEnableEn,
-      pref_enable_zh: profile.prefEnableZh
+      pref_enable_zh: profile.prefEnableZh,
+      location
     },
     enabled_langs: getEnabledLangs(profile, settings),
     localizations: toLocalizationMap(localizations, langsFilter)
@@ -146,6 +172,7 @@ export async function updateMyProfile(
     prefEnableTh: boolean;
     prefEnableEn: boolean;
     prefEnableZh: boolean;
+    locationId: string | null;
     localizations: Partial<
       Record<
         LanguageCode,
@@ -153,19 +180,26 @@ export async function updateMyProfile(
           full_name: string;
           position: string;
           department: string;
-          bot_location: string;
         }
       >
     >;
   }
 ) {
+  if (input.locationId) {
+    const loc = await findLocationById(db, input.locationId);
+    if (!loc) {
+      throw new AppError(400, "VALIDATION_ERROR", "location not found");
+    }
+  }
+
   const updatedProfile = await updateProfileNonLocalized(db, {
     userId: input.userId,
     emailPublic: input.emailPublic.trim().toLowerCase(),
     phoneNumber: input.phoneNumber,
     prefEnableTh: input.prefEnableTh,
     prefEnableEn: input.prefEnableEn,
-    prefEnableZh: input.prefEnableZh
+    prefEnableZh: input.prefEnableZh,
+    locationId: input.locationId
   });
 
   if (!updatedProfile) {
@@ -181,7 +215,6 @@ export async function updateMyProfile(
         full_name: string;
         position: string;
         department: string;
-        bot_location: string;
       }
     ] => {
       const value = entry[1];
@@ -196,8 +229,7 @@ export async function updateMyProfile(
         lang,
         fullName: value.full_name,
         position: value.position,
-        department: value.department,
-        botLocation: value.bot_location
+        department: value.department
       })
     )
   );
