@@ -1,5 +1,19 @@
 CREATE TYPE "public"."profile_lang" AS ENUM('th', 'en', 'zh');--> statement-breakpoint
 CREATE TYPE "public"."user_role" AS ENUM('employee', 'admin');--> statement-breakpoint
+CREATE TABLE "locations" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"code" varchar(50) NOT NULL,
+	"name_th" varchar(200) NOT NULL,
+	"name_en" varchar(200) NOT NULL,
+	"name_zh" varchar(200) NOT NULL,
+	"address_th" varchar(500),
+	"address_en" varchar(500),
+	"address_zh" varchar(500),
+	"is_active" boolean DEFAULT true NOT NULL,
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	CONSTRAINT "locations_code_unique" UNIQUE("code")
+);
+--> statement-breakpoint
 CREATE TABLE "profile_localizations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -7,7 +21,6 @@ CREATE TABLE "profile_localizations" (
 	"full_name" varchar(200) DEFAULT '-' NOT NULL,
 	"position" varchar(200) DEFAULT '-' NOT NULL,
 	"department" varchar(200) DEFAULT '-' NOT NULL,
-	"bot_location" varchar(200) DEFAULT '-' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "uq_profile_localizations_user_lang" UNIQUE("user_id","lang")
@@ -22,6 +35,7 @@ CREATE TABLE "profiles" (
 	"pref_enable_th" boolean DEFAULT true NOT NULL,
 	"pref_enable_en" boolean DEFAULT true NOT NULL,
 	"pref_enable_zh" boolean DEFAULT true NOT NULL,
+	"location_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "profiles_public_id_unique" UNIQUE("public_id")
@@ -50,5 +64,6 @@ CREATE TABLE "users" (
 --> statement-breakpoint
 ALTER TABLE "profile_localizations" ADD CONSTRAINT "profile_localizations_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_location_id_locations_id_fk" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_profile_localizations_user_id" ON "profile_localizations" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_users_is_active" ON "users" USING btree ("is_active");

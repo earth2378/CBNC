@@ -2,7 +2,7 @@
 set -e
 
 echo "[db] Running migrations..."
-npx drizzle-kit migrate
+npx drizzle-kit push --force
 
 echo "[db] Running seed..."
 npm run db:seed
