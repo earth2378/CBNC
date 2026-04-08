@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+
+# Type-check cache
+tsconfig.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Public static assets
+public/
+
+# Environment files
+.env*
