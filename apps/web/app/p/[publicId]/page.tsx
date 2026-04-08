@@ -75,7 +75,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
   const [data, setData] = useState<PublicProfileResponse | null>(null);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"jpg" | "pdf" | "share" | null>(null);
   const [theme, setTheme] = useState<Theme>("light");
   const [showQr, setShowQr] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -193,7 +193,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
 
   async function onSaveJpg() {
     if (!cardRef.current) return;
-    setExporting(true);
+    setExporting("jpg");
     setActionMessage("");
     try {
       const canvas = await renderCardCanvas();
@@ -202,13 +202,13 @@ export default function PublicPage({ params }: { params: { publicId: string } })
     } catch {
       setActionMessage("Unable to save JPG. Please try again.");
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   }
 
   async function onShareJpg() {
     if (!cardRef.current) return;
-    setExporting(true);
+    setExporting("share");
     setActionMessage("");
     try {
       const canvas = await renderCardCanvas();
@@ -245,7 +245,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
     } catch {
       setActionMessage("Unable to share JPG right now.");
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   }
 
@@ -286,7 +286,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
 
   async function onSavePdf() {
     if (!cardRef.current) return;
-    setExporting(true);
+    setExporting("pdf");
     setActionMessage("");
     try {
       const canvas = await renderCardCanvas();
@@ -327,7 +327,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
     } catch {
       setActionMessage("Unable to save PDF. Please try again.");
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   }
 
@@ -511,7 +511,7 @@ export default function PublicPage({ params }: { params: { publicId: string } })
             </svg>
             Save Contact
           </button>
-          <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting}>
+          <button type="button" className="export-btn" onClick={onSaveJpg} disabled={exporting === "jpg"}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16M16 12L12 16M12 16L8 12M12 16L12 4"
@@ -521,9 +521,9 @@ export default function PublicPage({ params }: { params: { publicId: string } })
                 strokeLinejoin="round"
               />
             </svg>
-            {exporting ? "Working…" : "Save JPG"}
+            Save JPG
           </button>
-          <button type="button" className="export-btn" onClick={onSavePdf} disabled={exporting}>
+          <button type="button" className="export-btn" onClick={onSavePdf} disabled={exporting === "pdf"}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
@@ -540,9 +540,9 @@ export default function PublicPage({ params }: { params: { publicId: string } })
                 strokeLinejoin="round"
               />
             </svg>
-            {exporting ? "Working…" : "Save PDF"}
+            Save PDF
           </button>
-          <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting}
+          <button type="button" className="export-btn" onClick={onShareJpg} disabled={exporting === "share"}
             title="Share this card"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

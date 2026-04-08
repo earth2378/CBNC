@@ -10,12 +10,19 @@ export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -25,7 +32,12 @@ export default function RegisterPage() {
       });
       router.push("/me/profile");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Register failed");
+      const raw = e instanceof Error ? e.message : "Register failed";
+      if (raw.toLowerCase().includes("at least 8")) {
+        setError("Password must be at least 8 characters");
+      } else {
+        setError(raw);
+      }
     } finally {
       setLoading(false);
     }
@@ -60,6 +72,19 @@ export default function RegisterPage() {
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            type="password"
+            placeholder="••••••••"
+            autoComplete="new-password"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="confirmPassword">Confirm Password</label>
+          <input
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
             required
             type="password"
             placeholder="••••••••"
