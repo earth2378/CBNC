@@ -16,10 +16,17 @@ type MeProfileResponse = {
   user: { id: string };
 };
 
+type ResetPasswordResult = {
+  email: string;
+  temp_password: string;
+};
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [error, setError] = useState("");
+  const [resetResult, setResetResult] = useState<ResetPasswordResult | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
 
   async function load() {
     setError("");
@@ -52,8 +59,55 @@ export default function AdminUsersPage() {
     };
   }, [users]);
 
+  async function handleResetPassword(user: UserSummary) {
+    setResettingId(user.id);
+    setError("");
+    try {
+      const result = await apiFetch<{ temp_password: string }>(`/admin/users/${user.id}/reset-password`, {
+        method: "POST"
+      });
+      setResetResult({ email: user.email, temp_password: result.temp_password });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Reset password failed");
+    } finally {
+      setResettingId(null);
+    }
+  }
+
   return (
     <div className="card">
+      {resetResult && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+        >
+          <div className="card" style={{ maxWidth: 420, width: "100%", margin: 0 }}>
+            <h3 style={{ marginTop: 0 }}>Password Reset</h3>
+            <p>
+              Temporary password for <strong>{resetResult.email}</strong>:
+            </p>
+            <div
+              className="card-soft"
+              style={{ fontFamily: "monospace", fontSize: 18, padding: "12px 16px", letterSpacing: 2 }}
+            >
+              {resetResult.temp_password}
+            </div>
+            <p style={{ color: "#475467", fontSize: 13 }}>
+              Share this password with the user. They should change it after logging in.
+            </p>
+            <button className="secondary" onClick={() => setResetResult(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h2 style={{ margin: 0 }}>Admin Users</h2>
@@ -99,24 +153,33 @@ export default function AdminUsersPage() {
                 </td>
                 <td>{new Date(user.created_at).toLocaleDateString()}</td>
                 <td>
-                  <button
-                    className={isSelfDeactivateAction ? "secondary" : user.is_active ? "danger" : "secondary"}
-                    disabled={isSelfDeactivateAction}
-                    title={isSelfDeactivateAction ? "You cannot deactivate your own account" : undefined}
-                    onClick={async () => {
-                      try {
-                        await apiFetch(`/admin/users/${user.id}`, {
-                          method: "PATCH",
-                          body: JSON.stringify({ is_active: !user.is_active })
-                        });
-                        await load();
-                      } catch (e) {
-                        setError(e instanceof Error ? e.message : "Update failed");
-                      }
-                    }}
-                  >
-                    {isSelfDeactivateAction ? "Current Account" : user.is_active ? "Deactivate" : "Activate"}
-                  </button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className={isSelfDeactivateAction ? "secondary" : user.is_active ? "danger" : "secondary"}
+                      disabled={isSelfDeactivateAction}
+                      title={isSelfDeactivateAction ? "You cannot deactivate your own account" : undefined}
+                      onClick={async () => {
+                        try {
+                          await apiFetch(`/admin/users/${user.id}`, {
+                            method: "PATCH",
+                            body: JSON.stringify({ is_active: !user.is_active })
+                          });
+                          await load();
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : "Update failed");
+                        }
+                      }}
+                    >
+                      {isSelfDeactivateAction ? "Current Account" : user.is_active ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={resettingId === user.id}
+                      onClick={() => handleResetPassword(user)}
+                    >
+                      {resettingId === user.id ? "Resetting…" : "Reset Password"}
+                    </button>
+                  </div>
                 </td>
               </tr>
             )})}
