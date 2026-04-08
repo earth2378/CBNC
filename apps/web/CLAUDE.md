@@ -143,3 +143,20 @@ All requests are made to `/backend/*` (proxied). Key endpoints:
 - **Dark mode**: Use `var(--color-*)` CSS variables, not hardcoded colors
 - **Photo upload**: Must use `FormData` with multipart, not JSON
 - **Language support**: UI must handle all three languages (th/en/zh) — check `prefEnable*` flags
+
+## TODO
+
+### Email Verification on Registration
+Two-step registration flow — implement when ready:
+
+**Backend (do first)**
+- [ ] `POST /auth/register` — change to send OTP email instead of auto-login
+- [ ] `POST /auth/verify-email` — accepts `{ email, code }`, creates session on success
+- [ ] `POST /auth/resend-verification` — resend OTP (optional)
+- [ ] Choose email sender: **Mailpit** for dev, **Resend** for production
+
+**Frontend (`app/register/page.tsx`)**
+- [ ] Add `step` state: `"form" | "verify"`
+- [ ] After successful register → switch to verify view
+- [ ] Verify view: show "check your inbox" message + 6-digit code input + Verify button + Resend link
+- [ ] On verify success → redirect to `/me/profile`
